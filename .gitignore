@@ -1,0 +1,11 @@
+# Ignore all
+*
+
+# Except these files
+!.gitignore
+!README.md
+!LICENSE
+
+# Except these directories
+
+# Except these paths and contents
