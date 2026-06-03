@@ -1,7 +1,7 @@
 # USBSID-Pico Configtool
 
 This repo contains the graphical configuration tool for USBSID-Pico.  
-It exists as supplement and next to the command line config tool and web configtool.
+It exists as supplement and next to the [command line config](https://github.com/LouDnl/USBSID-Pico/tree/master/examples/config-tool) tool and [web configtool](https://github.com/LouDnl/USBSID-Pico/tree/master/examples/config-tool-web).
 
 
 ## Installation
