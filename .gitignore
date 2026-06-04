@@ -1,14 +1,22 @@
 # Ignore all
 *
 
-# Except these files
+# Except these specific files
 !.gitignore
+!.version
 !README.md
 !LICENSE
 !deps.edn
 
-# Except these directories
+# And all these filetypes
+!*.clj
+
+# Certainly not these directories
 !resources
+!src
+!src/usbsid
+!src/usbsid/ui
+!src/usbsid/ui/sections
 
 # Except these paths and contents
 !resources/logging.properties
