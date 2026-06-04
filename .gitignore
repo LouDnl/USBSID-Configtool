@@ -7,6 +7,11 @@
 !LICENSE
 !deps.edn
 
+# C64 Font => https://style64.org/c64-truetype
+!C64_Pro-STYLE.ttf
+!C64_Pro_Mono-STYLE.ttf
+
 # Except these directories
+!resources
 
 # Except these paths and contents

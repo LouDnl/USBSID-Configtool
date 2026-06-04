@@ -30,6 +30,11 @@ Nope, note yet!
 Many, probably!
 
 
+## Fonts
+
+Font used is `C64 TrueType v1.2.1/Style` by [style64](https://style64.org/c64-truetype)  
+The font is implemented according to their [license statement](https://style64.org/c64-truetype/license)
+
 ## License
 
 Copyright © 2026 LouD
