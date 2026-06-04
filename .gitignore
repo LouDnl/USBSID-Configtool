@@ -5,6 +5,7 @@
 !.gitignore
 !README.md
 !LICENSE
+!deps.edn
 
 # Except these directories
 
