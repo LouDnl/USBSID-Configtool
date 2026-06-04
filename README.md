@@ -1,3 +1,4 @@
+![USBSID-Pico](resources/usbsid-logo.png)
 # USBSID-Pico Configtool
 
 This repo contains the graphical configuration tool for USBSID-Pico.  
