@@ -15,3 +15,4 @@
 !resources
 
 # Except these paths and contents
+!resources/logging.properties
