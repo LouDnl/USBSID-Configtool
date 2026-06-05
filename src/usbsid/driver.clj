@@ -231,10 +231,11 @@
       (state/log! "Reading configuration...")
       (let [result (read-with-retry do-read-config valid-config-response? 3 50)]
         (if (valid-config-response? result)
-          (do (swap! state/*state assoc
-                     :config (parse-config-bytes result)
-                     :dirty false)
-              (state/log! "Configuration loaded."))
+          (let [cfg (parse-config-bytes result)]
+            (swap! state/*state assoc :config cfg :dirty false)
+            (when (:need-confirmation cfg)
+              (state/set-section! :sockets))
+            (state/log! "Configuration loaded."))
           (state/log! "Read config: invalid response after retries"))))))
 
 (defn connect!
