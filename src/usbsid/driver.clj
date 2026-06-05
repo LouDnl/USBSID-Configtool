@@ -91,7 +91,7 @@
 
 ;;; Write config helpers
 
-(defn- config->commands
+(defn config->commands
   "Converts a config map to seq of [section item value] triples for SET_CONFIG.
    Testable without hardware."
   [cfg]
