@@ -2,10 +2,10 @@
   "The core of all things that never were"
   (:require
    [cljfx.api :as fx]
-   [usbsid.state :as state]
-   [usbsid.logging :as logging :refer [logger]]
    [usbsid.driver :as driver]
    [usbsid.events :as events]
+   [usbsid.logging :as logging :refer [logger]]
+   [usbsid.state :as state]
    [usbsid.ui.main :as ui])
   (:import
    [java.util.logging Level]
