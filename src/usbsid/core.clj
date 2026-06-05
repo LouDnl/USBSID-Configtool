@@ -46,7 +46,8 @@
   []
   (when @renderer
     (fx/unmount-renderer state/*state @renderer)
-    (reset! renderer nil))
+    (reset! renderer nil)
+    (reset! state/*state state/initial-state))
   (.fine @logger "Renderer & state unmounted")
   (when (driver/connected?)
     (driver/disconnect!))
