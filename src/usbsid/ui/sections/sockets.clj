@@ -85,15 +85,14 @@
        :text        "(Requires clone SID chip)"
        :style-class "c64-label-dim"}
 
-      (w/c64-row
-       "FMOpl Enabled"
-       {:fx/type     :toggle-button
-        :text        (if (get-in config [:fmopl :enabled]) "ON " "OFF")
-        :selected    (get-in config [:fmopl :enabled])
-        :on-action   {:event/type :config-changed
-                      :path [:fmopl :enabled]
-                      :value (not (get-in config [:fmopl :enabled]))}
-        :style-class "c64-toggle"})
+      (w/c64-row "FMOpl Enabled"
+                 {:fx/type     :toggle-button
+                  :text        (if (get-in config [:fmopl :enabled]) "ON " "OFF")
+                  :selected    (get-in config [:fmopl :enabled])
+                  :on-action   {:event/type :config-changed
+                                :path [:fmopl :enabled]
+                                :value (not (get-in config [:fmopl :enabled]))}
+                  :style-class "c64-toggle"})
 
       (w/c64-row "FMOpl SID No."
                  {:fx/type     :label
@@ -120,15 +119,14 @@
        :text        "(!) Presets are automatically applied and saved to flash."
        :style-class ["c64-warning-text" "c64-text-wrap"]}
 
-      (w/c64-row
-       "Preset"
-       {:fx/type          :combo-box
-        :style-class      ["combo-box" "c64-combo-box-wide"]
-        :items            (mapv :label model/presets)
-        :value            (get-in model/preset-by-key [(:last-preset config) :label])
-        :on-value-changed (fn [v]
-                            (when-let [p (first (filter (comp #{v} :label) model/presets))]
-                              (state/set-config-value! [:last-preset] (:key p))))})
+      (w/c64-row "Preset"
+                 {:fx/type          :combo-box
+                  :style-class      ["combo-box" "c64-combo-box-wide"]
+                  :items            (mapv :label model/presets)
+                  :value            (get-in model/preset-by-key [(:last-preset config) :label])
+                  :on-value-changed (fn [v]
+                                      (when-let [p (first (filter (comp #{v} :label) model/presets))]
+                                        (state/set-config-value! [:last-preset] (:key p))))})
 
       {:fx/type     :label
        :text        "During apply an auto detection will run as validation"
@@ -138,9 +136,8 @@
        :style-class "c64-hbox"
        :spacing     8
        :children
-       [(w/c64-button
-         "APPLY PRESET"
-         {:event/type :apply-preset :preset (:last-preset config)})]}]}]})
+       [(w/c64-button "APPLY PRESET"
+                      {:event/type :apply-preset :preset (:last-preset config)})]}]}]})
 
 (defn sockets-section
   "I hold the one true specials!"
