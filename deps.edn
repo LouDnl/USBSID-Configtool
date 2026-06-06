@@ -42,7 +42,7 @@
   :build {:deps       {io.github.clojure/tools.build
                        {:mvn/version "0.10.14"}}
           :jvm-opts   ["--enable-native-access=ALL-UNNAMED"
-                       "--sun-misc-unsafe-memory-access=allow"
+                       #_"--sun-misc-unsafe-memory-access=allow" ; JDK 22+
                        #_"-Dcljfx.skip-javafx-initialization=true"]
           :ns-default build}
   :test  {:extra-paths ["test"]
