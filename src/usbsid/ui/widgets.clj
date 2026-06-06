@@ -142,6 +142,6 @@
    :children
    [{:fx/type     :label
      :text        (format "%-24s" label)
-     :style-class "c64-label"
+     :style-class ["c64-label" "c64-text-wrap"]
      :min-width   200}
     widget]})
