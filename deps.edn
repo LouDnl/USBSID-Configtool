@@ -43,7 +43,7 @@
                        {:mvn/version "0.10.14"}}
           :jvm-opts   ["--enable-native-access=ALL-UNNAMED"
                        #_"--sun-misc-unsafe-memory-access=allow" ; JDK 22+
-                       #_"-Dcljfx.skip-javafx-initialization=true"]
+                       "-Dcljfx.skip-javafx-initialization=true"]
           :ns-default build}
   :test  {:extra-paths ["test"]
           :extra-deps  {org.clojure/test.check               {:mvn/version "1.1.3"}
