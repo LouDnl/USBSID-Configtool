@@ -22,6 +22,7 @@
                    :left   8}
      :children
      [(w/c64-header "LED CONFIGURATION")
+
       {:fx/type :h-box
        :spacing 12
        :children
@@ -49,8 +50,8 @@
                       :style-class "c64-toggle"})]}]}
 
       (w/c64-separator)
-
       (w/c64-header "RGB LED CONFIGURATION")
+
       {:fx/type :h-box
        :spacing 12
        :children
