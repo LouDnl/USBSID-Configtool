@@ -20,6 +20,8 @@
 
 # Except these paths and contents
 !resources/logging.properties
+!resources/usbsid-configtool-icon.png
+!resources/usbsid-configtool-logo.png
 !resources/usbsid-logo.png
 
 # C64 Font => https://style64.org/c64-truetype
