@@ -155,12 +155,15 @@
   {:fx/type     :v-box
    :style-class "c64-vbox"
    :spacing     12
-   :padding     {:top 8 :right 8 :bottom 8 :left 8}
+   :padding     {:top    8
+                 :right  8
+                 :bottom 8
+                 :left   8}
    :children
    [(w/c64-header "SOCKET CONFIGURATION")
 
-    {:fx/type  :h-box
-     :spacing  12
+    {:fx/type :h-box
+     :spacing 12
      :children
      [(socket-panel {:socket-key :socket-one
                      :socket     (:socket-one config)})
