@@ -13,17 +13,24 @@
 !*.clj
 
 # Certainly not these directories
+!.github
+!.github/workflows
 !resources
+!scripts
 !src
 !src/usbsid
 !src/usbsid/ui
 !src/usbsid/ui/sections
+!test
+!test/usbsid
 
 # Except these paths and contents
+!.github/workflows/ci-tagged-build-or-release.yml
 !resources/logging.properties
 !resources/usbsid-configtool-icon.png
 !resources/usbsid-configtool-logo.png
 !resources/usbsid-logo.png
+!scripts/build-appimage.sh
 
 # C64 Font => https://style64.org/c64-truetype
 !resources/C64_Pro-STYLE.ttf
