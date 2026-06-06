@@ -121,5 +121,8 @@
       (let [ini-str  (slurp file)
             base-cfg (:config @state/*state)
             new-cfg  (ini-io/ini->config ini-str base-cfg)]
-        (swap! state/*state assoc :config new-cfg :dirty true)
+        (swap! state/*state
+               #(-> %
+                    (assoc :config new-cfg :dirty true)
+                    (assoc-in [:connection :config-status] :fromini)))
         (state/log! (str "Config imported from " (.getName file)))))))

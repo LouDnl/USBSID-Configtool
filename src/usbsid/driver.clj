@@ -233,6 +233,7 @@
         (if (valid-config-response? result)
           (let [cfg (parse-config-bytes result)]
             (swap! state/*state assoc :config cfg :dirty false)
+            (swap! state/*state assoc-in [:connection :config-status] :loaded)
             (when (:need-confirmation cfg)
               (state/set-section! :sockets))
             (state/log! "Configuration loaded."))
@@ -263,7 +264,7 @@
       (state/log! "Disconnecting...")
       ; Don't care for Exceptions on disconnect, stops flow otherwise
       (try (.USBSID_exit @drv-atom) (catch Exception _ nil))
-      (state/set-connection! :disconnected nil nil)
+      (state/set-connection! :disconnected nil nil) ; Will also set config-loaded to nothing
       (state/log! "Disconnected."))))
 
 (defn write-config!
@@ -272,6 +273,8 @@
   (with-driver "Write config"
     (fn []
       (state/log! "Writing configuration...")
+      ; Change state _before_ writing the config in case of single thrown set_config exception
+      (swap! state/*state assoc-in [:connection :config-status] :written)
       (send-config! (:config @state/*state))
       (state/log! "Configuration written."))))
 
@@ -286,6 +289,7 @@
        (bit-and (.get Config$Cfg/SAVE_NORESET) 0xff)
        (into-array Byte [(cfg-byte 0)]))
       (swap! state/*state assoc :dirty false)
+      (swap! state/*state assoc-in [:connection :config-status] :saved)
       (state/log! "Configuration saved."))))
 
 (defn save-reboot!
@@ -325,6 +329,7 @@
        @drv-atom
        (bit-and (.get Config$Cfg/APPLY_CONFIG) 0xff)
        (into-array Byte [(cfg-byte 0)]))
+      (swap! state/*state assoc-in [:connection :config-status] :applied)
       (state/log! "Configuration applied."))))
 
 (defn reload-config! []
@@ -351,6 +356,7 @@
        (bit-and (.get Config$Cfg/CONFIG_ACK) 0xff)
        (into-array Byte [(cfg-byte 0)]))
       (state/set-config-value! [:need-confirmation] false)
+      (swap! state/*state assoc-in [:connection :config-status] :confirmed)
       (state/log! "Configuration acknowledged. Socket power enabled."))))
 
 (defn auto-detect!
