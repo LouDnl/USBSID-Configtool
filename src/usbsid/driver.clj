@@ -136,8 +136,13 @@
 (defn send-config!
   "Write all settings from the supplied config, 1 write per setting"
   [cfg]
-  (doseq [[a b c] (config->commands cfg)]
-    (set-cfg {:a a :b b :c c})))
+  (doall
+   (doseq [[a b c] (config->commands cfg)]
+     (try
+       (set-cfg {:a a :b b :c c})
+       (catch Exception e
+         (state/log! (format "send-config! error [0x%X 0x%X 0x%X]: %s" a b c (.getMessage e)))
+         (throw e))))))
 
 
 ;;; Internal driver API
