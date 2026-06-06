@@ -46,7 +46,7 @@
   (into {} (map (fn [s] [(:key s) s]) sid-types)))
 
 (def fmopl-sid-options
-  [{:key 0   :label "Disabled"}
+  [{:key 0   :label "Unknown"}
    {:key 1   :label "SID 1"}
    {:key 2   :label "SID 2"}
    {:key 3   :label "SID 3"}
