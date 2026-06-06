@@ -233,7 +233,7 @@
   []
   (with-driver "Read config"
     (fn []
-      (state/log! "Reading configuration...")
+      (state/log! "Reading configuration")
       (let [result (read-with-retry do-read-config valid-config-response? 3 50)]
         (if (valid-config-response? result)
           (let [cfg (parse-config-bytes result)]
@@ -250,7 +250,7 @@
   (with-driver "Connect"
     (fn []
       (reset! drv-atom (USBSID.))
-      (state/log! "Connecting to USBSID-Pico...")
+      (state/log! "Connecting to USBSID-Pico")
       (let [result (.USBSID_init @drv-atom)]
         (if (zero? result)
           (let [fw  (read-with-retry #(do-read-pcbversion) valid-fw-version? 3 50)
@@ -266,7 +266,7 @@
   []
   (with-driver "Disconnect"
     (fn []
-      (state/log! "Disconnecting...")
+      (state/log! "Disconnecting")
       ; Don't care for Exceptions on disconnect, stops flow otherwise
       (try (.USBSID_exit @drv-atom) (catch Exception _ nil))
       (state/set-connection! :disconnected nil nil) ; Will also set config-loaded to nothing
@@ -277,7 +277,7 @@
   []
   (with-driver "Write config"
     (fn []
-      (state/log! "Writing configuration...")
+      (state/log! "Writing configuration")
       ; Change state _before_ writing the config in case of single thrown set_config exception
       (swap! state/*state assoc-in [:connection :config-status] :written)
       (send-config! (:config @state/*state))
@@ -288,7 +288,7 @@
   []
   (with-driver "Save config"
     (fn []
-      (state/log! "Saving configuration (no reboot)...")
+      (state/log! "Saving configuration (no reboot)")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/SAVE_NORESET) 0xff)
@@ -302,7 +302,7 @@
   []
   (with-driver "Save+reboot"
     (fn []
-      (state/log! "Saving and rebooting board...")
+      (state/log! "Saving and rebooting board")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/SAVE_CONFIG) 0xff)
@@ -315,7 +315,7 @@
   []
   (with-driver "Reset config"
     (fn []
-      (state/log! "Resetting to default configuration...")
+      (state/log! "Resetting to default configuration")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/RESET_CONFIG) 0xff)
@@ -329,7 +329,7 @@
   []
   (with-driver "Apply config"
     (fn []
-      (state/log! "Applying configuration (no save)...")
+      (state/log! "Applying configuration (no save)")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/APPLY_CONFIG) 0xff)
@@ -340,7 +340,7 @@
 (defn reload-config! []
   (with-driver "Reload config"
     (fn []
-      (state/log! "Reloading configuration from flash...")
+      (state/log! "Reloading configuration from flash")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/RELOAD_CONFIG) 0xff)
@@ -355,7 +355,7 @@
   []
   (with-driver "Confirm config"
     (fn []
-      (state/log! "Sending CONFIG_ACK to board...")
+      (state/log! "Sending CONFIG_ACK to board")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/CONFIG_ACK) 0xff)
@@ -369,13 +369,13 @@
   []
   (with-driver "Auto detect"
     (fn []
-      (state/log! "Starting auto-detection (chip + SID types)...")
+      (state/log! "Starting auto-detection (chip + SID types)")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/AUTO_DETECT) 0xff)
        (into-array Byte [(cfg-byte 0)]))
       (Thread/sleep 3000)
-      (state/log! "Auto-detection complete. Reading updated config...")
+      (state/log! "Auto-detection complete. Reading updated config")
       @(read-config!))))
 
 (defn detect-sids!
@@ -383,7 +383,7 @@
   []
   (with-driver "Detect SIDs"
     (fn []
-      (state/log! "Detecting SID types (this may take a moment)...")
+      (state/log! "Detecting SID types (this may take a moment)")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/DETECT_SIDS) 0xff)
@@ -397,7 +397,7 @@
   []
   (with-driver "Detect clones"
     (fn []
-      (state/log! "Detecting clone SID types...")
+      (state/log! "Detecting clone SID types")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/DETECT_CLONES) 0xff)
@@ -411,7 +411,7 @@
   []
   (with-driver "Test all SIDs"
     (fn []
-      (state/log! "Running test on all SIDs (long)...")
+      (state/log! "Running test on all SIDs (long)")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/TEST_ALLSIDS) 0xff)
@@ -422,7 +422,7 @@
   [n]
   (with-driver (str "Test SID " n)
     (fn []
-      (state/log! (str "Running test on SID " n " (long)..."))
+      (state/log! (str "Running test on SID " n " (long)"))
       (let [cmd (case n
                   1 Config$Cfg/TEST_SID1
                   2 Config$Cfg/TEST_SID2
@@ -439,7 +439,7 @@
   []
   (with-driver "Stop tests"
     (fn []
-      (state/log! "Stopping all SID tests...")
+      (state/log! "Stopping all SID tests")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/STOP_TESTS) 0xff)
@@ -451,7 +451,7 @@
   []
   (with-driver "Restart bus"
     (fn []
-      (state/log! "Restarting DMA & PIO bus...")
+      (state/log! "Restarting DMA & PIO bus")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/RESTART_BUS) 0xff)
@@ -463,7 +463,7 @@
   []
   (with-driver "Restart clock"
     (fn []
-      (state/log! "Restarting PIO clocks...")
+      (state/log! "Restarting PIO clocks")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/RESTART_BUS_CLK) 0xff)
@@ -475,7 +475,7 @@
   []
   (with-driver "Sync PIOs"
     (fn []
-      (state/log! "Syncing PIO clocks...")
+      (state/log! "Syncing PIO clocks")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/SYNC_PIOS) 0xff)
@@ -487,7 +487,7 @@
   []
   (with-driver "Reset SIDs"
     (fn []
-      (state/log! "Resetting SID chips...")
+      (state/log! "Resetting SID chips")
       (.USBSID_reset @drv-atom (byte 0))
       (state/log! "SIDs reset."))))
 
@@ -496,7 +496,7 @@
   []
   (with-driver "Reset MCU"
     (fn []
-      (state/log! "Resetting MCU (USB will disconnect)...")
+      (state/log! "Resetting MCU (USB will disconnect)")
       (.USBSID_sendconfigcommand
        @drv-atom
        (bit-and (.get Config$Cfg/RESET_USBSID) 0xff)
@@ -509,7 +509,7 @@
   []
   (with-driver "Bootloader"
     (fn []
-      (state/log! "Entering bootloader mode (USB will disconnect)...")
+      (state/log! "Entering bootloader mode (USB will disconnect)")
       (USBSIDDevice/sendCommand (.get Cmd/BOOTLOADER) (into-array Byte []))
       (state/set-connection! :disconnected nil nil)
       (state/log! "Board in bootloader mode. Flash new firmware, then reconnect."))))
@@ -540,11 +540,11 @@
     (fn []
       (if-let [[cmd arg] (get preset->cfg preset-key)]
         (do
-          (state/log! (str "Applying preset: " (name preset-key) "..."))
+          (state/log! (str "Applying preset: " (name preset-key) ""))
           (.USBSID_sendconfigcommand @drv-atom
                                      (bit-and (.get cmd) 0xff)
                                      (into-array Byte [(cfg-byte arg)]))
           (Thread/sleep 100)
-          (state/log! "Preset applied. Reading updated config...")
+          (state/log! "Preset applied. Reading updated config")
           @(read-config!))
         (state/log! (str "Preset " (name preset-key) " has no direct command"))))))
