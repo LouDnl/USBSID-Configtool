@@ -48,7 +48,7 @@
 
         {:fx/type     :label
          :text        "AUTO DETECT: detects chip + SID types, saves and applies. No reboot needed."
-         :style-class "c64-label-dim"}]}]}
+         :style-class ["c64-label-dim" "c64-text-wrap"]}]}]}
 
     (w/c64-separator)
     (w/c64-header "SID TESTS")
@@ -62,7 +62,7 @@
        :children
        [{:fx/type     :label
          :text        "Tests run on the board for a long time. Use STOP TESTS to interrupt."
-         :style-class "c64-label-dim"}
+         :style-class ["c64-label-dim" "c64-text-wrap"]}
 
         {:fx/type     :h-box
          :style-class "c64-hbox"
