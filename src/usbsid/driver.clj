@@ -256,7 +256,7 @@
           (let [fw  (read-with-retry #(do-read-pcbversion) valid-fw-version? 3 50)
                 pcb (read-with-retry #(do-read-fwversion) valid-pcb-version? 3 50)]
             (state/set-connection! :connected fw pcb)
-            (state/log! (str "Connected! FW: v" fw "  PCB: v" pcb))
+            (state/log! (format "Connected! FW: v%s PCB: v%s" fw pcb))
             @(read-config!))
           (do (state/set-connection! :disconnected nil nil)
               (state/log! "Connection failed - device not found")))))))
