@@ -25,7 +25,8 @@
   "Logging wrapper"
   [msg]
   (swap! *state update :log conj msg)
-  (.info @logger msg))
+  (when (realized? logger)
+    (.info @logger msg)))
 
 (defn set-section!
   "Active section changer"
