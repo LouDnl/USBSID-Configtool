@@ -12,10 +12,10 @@
 (defn load-window
   "Load window settings from node"
   []
-  {:x (.getDouble node "x" Double/NaN)
-   :y (.getDouble node "y" Double/NaN)
-   :w (.getDouble node "w" 1280.0)
-   :h (.getDouble node "h" 1024.0)})
+  {:x (.getDouble node "x" Double/NaN) ; no default window position
+   :y (.getDouble node "y" Double/NaN) ; no default window position
+   :w (.getDouble node "w" 1280.0)     ; default width
+   :h (.getDouble node "h" 1024.0)})   ; default height
 
 (defn save-window!
   "Save window settings to node"
