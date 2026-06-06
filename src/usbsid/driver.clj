@@ -253,7 +253,7 @@
       (state/log! "Connecting to USBSID-Pico...")
       (let [result (.USBSID_init @drv-atom)]
         (if (zero? result)
-          (let [fw  (read-with-retry #(do-read-pcbversion)  valid-fw-version?  3 50)
+          (let [fw  (read-with-retry #(do-read-pcbversion) valid-fw-version? 3 50)
                 pcb (read-with-retry #(do-read-fwversion) valid-pcb-version? 3 50)]
             (state/set-connection! :connected fw pcb)
             (state/log! (str "Connected! FW: v" fw "  PCB: v" pcb))
