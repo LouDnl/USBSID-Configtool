@@ -294,12 +294,12 @@
      :on-close-request (fn [_]
                          #_(.fine @logging/logger "> Application is set to close")
                          (log! "Application is set to close")
-                         (w-prefs/set-window-state)
+                         (w-prefs/save-window-state)
                          (deliver signalled true))
      :on-hidden (fn [_]
                   #_(.fine @logging/logger "> Application closed")
                   (log! "Application closed")
-                  (w-prefs/set-window-state)
+                  (w-prefs/save-window-state)
                   (deliver stopped true))
      ;;  :min-width  900
      ;;  :min-height 650
