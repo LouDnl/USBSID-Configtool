@@ -6,7 +6,8 @@
    [usbsid.events :as events]
    [usbsid.logging :as logging :refer [logger]]
    [usbsid.state :as state]
-   [usbsid.ui.main :as ui])
+   [usbsid.ui.main :as ui]
+   [usbsid.window-prefs :as win-prefs])
   (:import
    [java.util.logging Level]
    [javafx.application Platform]
@@ -14,7 +15,7 @@
   (:gen-class))
 
 
-(defn- ui-map-desc
+(defn ui-map-desc
   "Default ui map description"
   [s]
   {:fx/type        ui/root-view
@@ -39,21 +40,26 @@
   (logging/start-logger)
   (Platform/setImplicitExit false)
   (reset! renderer (new-renderer))
-  (fx/mount-renderer state/*state @renderer))
+  (fx/mount-renderer state/*state @renderer)
+  (Platform/runLater
+   (fn []
+     (win-prefs/set-window-state))))
 
 (defn stop-app
   "Stop the application"
   []
+  (when (driver/connected?)
+    (driver/disconnect!)
+    (.fine @logger "Driver disconnected"))
   (when @renderer
     (fx/unmount-renderer state/*state @renderer)
     (reset! renderer nil)
-    (reset! state/*state state/initial-state))
-  (.fine @logger "Renderer & state unmounted")
-  (when (driver/connected?)
-    (driver/disconnect!))
+    (reset! state/*state state/initial-state)
+    (.fine @logger "Renderer & state unmounted"))
   (let [done (promise)]
     (Platform/runLater
      (fn []
+       (win-prefs/save-window-state)
        (doseq [^Window w (into [] (Window/getWindows))]
          (.hide w))
        (deliver done true)))
@@ -69,6 +75,7 @@
     (.fine @logger "Signal to shutdown received")
     (finally
       (try
+        (deref ui/stopped)
         (stop-app)
         (catch Exception e
           (.log @logger Level/SEVERE "Error during shutdown" e)))
