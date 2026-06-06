@@ -24,8 +24,8 @@
 (defn log!
   "Logging wrapper"
   [msg]
-  (swap! *state update :log conj (str "> " msg))
-  (.info @logger (str "> " msg)))
+  (swap! *state update :log conj msg)
+  (.info @logger msg))
 
 (defn set-section!
   "Active section changer"
