@@ -17,7 +17,7 @@
                      (trim-newline (slurp ".version")))]
    :dirty          false})
 
-(defonce *state (atom initial-state))
+(def *state (atom initial-state))
 
 (defn log!
   "Logging wrapper"
