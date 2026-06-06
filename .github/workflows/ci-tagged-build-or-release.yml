@@ -1,0 +1,218 @@
+name: CI / Build / Release
+
+on:
+  push:
+    branches: ['**']
+    tags:
+      - 'd[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'  # e.g. d20260601 — tagged snapshot
+      - 'v[0-9]*'                                    # e.g. v0.1.0  — versioned release
+  pull_request:
+
+jobs:
+
+  # 1. Unit tests — Ubuntu only
+  test:
+    name: Tests (Ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: DeLaGuardo/setup-clojure@13.4
+        with:
+          cli: latest
+
+      - name: Cache Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-m2-${{ hashFiles('deps.edn') }}
+          restore-keys: ${{ runner.os }}-m2-
+
+      - name: Install USBSID driver
+        shell: bash
+        run: |
+          DIR="$HOME/.m2/repository/usbsid/usbsid-usb-driver-library-java/1.1"
+          mkdir -p "$DIR"
+          cp assets/driver/usbsid-usb-driver-library-java-1.1.jar "$DIR/"
+          cp assets/driver/usbsid-usb-driver-library-java-1.1.pom "$DIR/"
+
+      - name: Run tests
+        run: clj -T:build test
+
+  # 2. CI build — Ubuntu only
+  ci:
+    name: CI Build (Ubuntu)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: DeLaGuardo/setup-clojure@13.4
+        with:
+          cli: latest
+
+      - name: Cache Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-m2-${{ hashFiles('deps.edn') }}
+          restore-keys: ${{ runner.os }}-m2-
+
+      - name: Install USBSID driver
+        shell: bash
+        run: |
+          DIR="$HOME/.m2/repository/usbsid/usbsid-usb-driver-library-java/1.1"
+          mkdir -p "$DIR"
+          cp assets/driver/usbsid-usb-driver-library-java-1.1.jar "$DIR/"
+          cp assets/driver/usbsid-usb-driver-library-java-1.1.pom "$DIR/"
+
+      - name: CI build (uber + launchers)
+        run: clj -T:build ci
+
+      - name: Upload JAR and launchers
+        uses: actions/upload-artifact@v4
+        with:
+          name: jar-and-launchers
+          path: |
+            target/usbsid-configtool-*.jar
+            target/run.sh
+            target/run.bat
+
+  # 3. Platform packages — tagged snapshots (d*) and releases (v*)
+  package:
+    name: Package (${{ matrix.platform }})
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: ci
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux            # jpackage app-image (zipped directory)
+          - os: ubuntu-latest
+            platform: linux-appimage   # self-contained .AppImage
+          - os: windows-latest
+            platform: windows          # jpackage .exe installer
+          - os: macos-13               # Intel x86_64
+            platform: macos-intel      # jpackage .dmg
+          - os: macos-latest           # Apple Silicon arm64
+            platform: macos-arm        # jpackage .dmg
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: DeLaGuardo/setup-clojure@13.4
+        with:
+          cli: latest
+
+      - name: Cache Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-m2-${{ hashFiles('deps.edn') }}
+          restore-keys: ${{ runner.os }}-m2-
+
+      - name: Install USBSID driver
+        shell: bash
+        run: |
+          DIR="$HOME/.m2/repository/usbsid/usbsid-usb-driver-library-java/1.1"
+          mkdir -p "$DIR"
+          cp assets/driver/usbsid-usb-driver-library-java-1.1.jar "$DIR/"
+          cp assets/driver/usbsid-usb-driver-library-java-1.1.pom "$DIR/"
+
+      # Download the pre-built JAR from the ci job so jpackage skips the uber step
+      - name: Download JAR from CI
+        uses: actions/download-artifact@v4
+        with:
+          name: jar-and-launchers
+
+      - name: Build platform package
+        shell: bash
+        run: |
+          clj -T:build package
+          if [ "${{ matrix.platform }}" = "linux-appimage" ]; then
+            bash scripts/build-appimage.sh
+          fi
+
+      # Stage output with platform-tagged filenames so all five can coexist
+      - name: Stage artifacts
+        shell: bash
+        run: |
+          VERSION=$(cat resources/.version | tr -d '[:space:]')
+          mkdir -p staging
+
+          if [ "${{ matrix.platform }}" = "linux" ]; then
+            (cd target/package && zip -r "../../staging/USBSID-Pico-Configtool-${VERSION}-linux.zip" USBSID-Pico-Configtool/)
+
+          elif [ "${{ matrix.platform }}" = "linux-appimage" ]; then
+            cp target/appimage/*.AppImage staging/
+
+          elif [ "${{ matrix.platform }}" = "windows" ]; then
+            cp target/package/*.exe "staging/USBSID-Pico-Configtool-${VERSION}-windows.exe"
+
+          elif [ "${{ matrix.platform }}" = "macos-intel" ]; then
+            cp target/package/*.dmg "staging/USBSID-Pico-Configtool-${VERSION}-macos-x86_64.dmg"
+
+          elif [ "${{ matrix.platform }}" = "macos-arm" ]; then
+            cp target/package/*.dmg "staging/USBSID-Pico-Configtool-${VERSION}-macos-aarch64.dmg"
+          fi
+
+      - name: Upload platform artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.platform }}
+          path: staging/*
+
+  # 4. GitHub Release — v* tags only
+
+  release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [ci, package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Collect all five platform packages into dist/
+      - name: Download platform packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: package-*
+          path: dist
+          merge-multiple: true
+
+      # JAR has a target/ prefix in its artifact — download separately then flatten
+      - name: Download JAR and launchers
+        uses: actions/download-artifact@v4
+        with:
+          name: jar-and-launchers
+          path: dist-jar
+
+      - name: Collect all release files
+        run: |
+          cp dist-jar/target/usbsid-configtool-*.jar dist/
+          cp dist-jar/target/run.sh  dist/
+          cp dist-jar/target/run.bat dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+          files: dist/*
