@@ -1,30 +1,62 @@
 (ns usbsid.window-prefs
   "Save Window size an location, because I can :P"
+  (:require
+   [clojure.edn :as edn]
+   [clojure.java.io :as io])
   (:import
-   [java.util.prefs Preferences]
    [javafx.stage Window]))
 
 
-; This is, well if you use Linux, located at ~/.java/.userPrefs/usbsid-pico-configtool/prefs.xml
-(def ^:private ^Preferences node
-  (.node (Preferences/userRoot) "usbsid-pico-configtool"))
+;;; Directory & file location
 
-(defn load-window
-  "Load window settings from node"
+(defn config-dir
   []
-  {:x (.getDouble node "x" Double/NaN) ; no default window position
-   :y (.getDouble node "y" Double/NaN) ; no default window position
-   :w (.getDouble node "w" 1280.0)     ; default width
-   :h (.getDouble node "h" 1024.0)})   ; default height
+  (let [home (System/getProperty "user.home")
+        os   (System/getProperty "os.name" "")]
+    (cond
+      (.startsWith os "Windows")
+      (io/file (or (System/getenv "APPDATA") home) "usbsid-configtool")
 
-(defn save-window!
-  "Save window settings to node"
+      (.startsWith os "Mac")
+      (io/file home "Library" "Application Support" "usbsid-configtool")
+
+      :else
+      (io/file (or (System/getenv "XDG_CONFIG_HOME")
+                   (str home "/.config"))
+               "usbsid-configtool"))))
+
+(defn- prefs-file
+  []
+  (io/file (config-dir) "prefs.edn"))
+
+
+;;; Default window size
+
+(def ^:private defaults
+  {:x Double/NaN :y Double/NaN :w 1280.0 :h 1024.0})
+
+
+;;; Internal wrappers
+
+(defn- load-window
+  "Load window settings from ~/.config/usbsid-configtool/prefs.edn"
+  []
+  (try
+    (if (.exists (prefs-file))
+      (merge defaults (edn/read-string (slurp (prefs-file))))
+      defaults)
+    (catch Exception _ defaults)))
+
+(defn- save-window!
+  "Save window settings to ~/.config/usbsid-configtool/prefs.edn"
   [{:keys [x y w h]}]
-  (.putDouble node "x" x)
-  (.putDouble node "y" y)
-  (.putDouble node "w" w)
-  (.putDouble node "h" h)
-  (try (.flush node) (catch Exception _)))
+  (try
+    (io/make-parents (prefs-file))
+    (spit (prefs-file) (pr-str {:x x :y y :w w :h h}))
+    (catch Exception _)))
+
+
+;;; Save and restore the state
 
 (defn set-window-state
   "Set the window state"
