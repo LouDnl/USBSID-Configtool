@@ -45,6 +45,14 @@
 (def sid-type-by-key
   (into {} (map (fn [s] [(:key s) s]) sid-types)))
 
+(def fmopl-sid-options
+  [{:key 0   :label "Disabled"}
+   {:key 1   :label "SID 1"}
+   {:key 2   :label "SID 2"}
+   {:key 3   :label "SID 3"}
+   {:key 4   :label "SID 4"}
+   {:key 255 :label "Disabled"}])
+
 (def voltages
   [{:mos6581  "12v"}
    {:mos8580   "9v"}
