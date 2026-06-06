@@ -72,7 +72,7 @@
      :rgbled               {:enabled      (pos? (g 40))
                             :idle-breathe (pos? (g 41))
                             :brightness   (g 42)
-                            :sid-to-use   (let [v (g 43)] (if (zero? v) -1 v))}
+                            :sid-to-use   (let [v (g 43)] (if (or (zero? v) (= v 0xFF)) -1 v))}
      ; Stuffs
      :cdc                  {:enabled (pos? (g 51))}
      :webusb               {:enabled (pos? (g 52))}
