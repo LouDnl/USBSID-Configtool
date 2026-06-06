@@ -53,6 +53,13 @@
    {:key 4   :label "SID 4"}
    {:key 255 :label "Disabled"}])
 
+(def sid-to-use-options
+  [{:key -1 :label "Off"}
+   {:key  1 :label "SID 1"}
+   {:key  2 :label "SID 2"}
+   {:key  3 :label "SID 3"}
+   {:key  4 :label "SID 4"}])
+
 (def voltages
   [{:mos6581  "12v"}
    {:mos8580   "9v"}
