@@ -45,6 +45,29 @@
 (def sid-type-by-key
   (into {} (map (fn [s] [(:key s) s]) sid-types)))
 
+(def voltages
+  [{:mos6581  "12v"}
+   {:mos8580   "9v"}
+   {:unknown   "9v"}
+   {:skpico    "9v"}
+   {:armsid    "9v"}
+   {:arm2sid   "9v"}
+   {:fpgasid   "9v"}
+   {:redipsid  "9v"}
+   {:pdsid     "9v"}
+   {:backsid   "9v"}
+   {:sidemu    "9v"}])
+
+(def voltage-by-type
+  (apply merge voltages))
+
+(defn chipvoltage
+  [chipkey sidkey]
+  (or (if (= chipkey :real)
+        (get voltage-by-type sidkey)
+        (get voltage-by-type chipkey))
+      "N/A"))
+
 (def presets
   [{:key :single-s1     :label "SINGLE SID (Socket 1)"        :id  0}
    {:key :single-s2     :label "SINGLE SID (Socket 2)"        :id  1}
@@ -70,11 +93,13 @@
 (def initial-config
   {:clock-rate           :pal
    :socket-one           {:chiptype :unknown
+                          :voltage  :unknown
                           :sid1     {:id 0    :addr 0x00 :type :unknown}
                           :sid2     {:id 0xFF :addr 0xFF :type :na}
                           :enabled  true
                           :dualsid  false}
    :socket-two           {:chiptype :unknown
+                          :voltage  :unknown
                           :sid1     {:id 1    :addr 0x20 :type :unknown}
                           :sid2     {:id 0xFF :addr 0xFF :type :na}
                           :enabled  true
