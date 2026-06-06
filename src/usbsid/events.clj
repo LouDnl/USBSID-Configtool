@@ -110,6 +110,7 @@
                  (:config s)
                  (get-in s [:connection :fw-version]))]
         (spit file ini)
+        (swap! state/*state assoc-in [:connection :config-status] :exportini)
         (state/log! (str "Config exported to " (.getName file)))))))
 
 (defmethod handle :import-ini [_]
@@ -124,5 +125,5 @@
         (swap! state/*state
                #(-> %
                     (assoc :config new-cfg :dirty true)
-                    (assoc-in [:connection :config-status] :fromini)))
+                    (assoc-in [:connection :config-status] :importini)))
         (state/log! (str "Config imported from " (.getName file)))))))
