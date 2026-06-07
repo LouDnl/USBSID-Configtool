@@ -2,7 +2,20 @@
   "I make things pritteh!"
   (:require
    [clojure.java.io :as io]
-   [cljfx.css :as css]))
+   [cljfx.css :as css])
+  (:import
+   [javafx.scene.text Font]))
+
+
+;;; Font pre-loading - Font/loadFont handles jar: URLs; CSS @font-face alone cannot
+
+(defn load-fonts!
+  "Pre-load custom fonts so JavaFX can find them by family name.
+   Must be called after FX toolkit is initialized, before first render."
+  []
+  (doseq [name ["C64_Pro_Mono-STYLE.ttf" "C64_Pro-STYLE.ttf"]]
+    (when-let [url (io/resource name)]
+      (Font/loadFont (str url) 12.0))))
 
 
 ;;; Creation of the stylesheets

@@ -6,6 +6,7 @@
    [usbsid.events :as events]
    [usbsid.logging :as logging :refer [logger]]
    [usbsid.state :as state]
+   [usbsid.ui.css :as css]
    [usbsid.ui.main :as ui]
    [usbsid.window-prefs :as win-prefs])
   (:import
@@ -38,6 +39,7 @@
   "Start the application"
   []
   (logging/start-logger)
+  (css/load-fonts!)
   (Platform/setImplicitExit false)
   (reset! renderer (new-renderer))
   (fx/mount-renderer state/*state @renderer)
