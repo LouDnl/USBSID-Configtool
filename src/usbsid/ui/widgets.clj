@@ -53,7 +53,8 @@
    :children
    [{:fx/type     :label
      :text        (format "%-24s" label)
-     :style-class "c64-label"}
+     :style-class "c64-label"
+     :min-width   200}
     (c64-toggle selected on-action :disabled disabled)]})
 
 (defn c64-combo
@@ -124,7 +125,7 @@
    :style-class "c64-hbox"
    :children
    [{:fx/type     :label
-     :text        (format "%24s" label)
+     :text        (format "%20s" label)
      :style-class "c64-label"}
     (c64-slider min max value on-change :disabled disabled)]})
 
@@ -141,7 +142,21 @@
    :style-class "c64-hbox"
    :children
    [{:fx/type     :label
-     :text        (format "%-24s" label)
-     :style-class ["c64-label" "c64-text-wrap"]
+     :text        (format "%-20s" label)
+     :style-class "c64-label"
+     :wrap-text   false
+     :min-width   200}
+    widget]})
+
+(defn c64-narrow-row
+  "Two-column label+widget row."
+  [label widget]
+  {:fx/type     :h-box
+   :style-class "c64-hbox"
+   :children
+   [{:fx/type     :label
+     :text        (format "%-10s" label)
+     :style-class "c64-label"
+     :wrap-text   false
      :min-width   200}
     widget]})
