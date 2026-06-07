@@ -1,5 +1,5 @@
 (ns usbsid.ui.sections.about
-  "So, what's it all about then?"
+  "So, what's it all about then?!"
   (:require
    [usbsid.ui.sections.common :as common]
    [usbsid.ui.widgets :as w]))
