@@ -241,6 +241,7 @@
         (if (valid-config-response? result)
           (let [cfg (parse-config-bytes result)]
             (swap! state/*state assoc :config cfg :dirty false)
+            (swap! state/*state assoc-in [:config :raw-config] result)
             (swap! state/*state assoc-in [:connection :config-status] :loaded)
             (when (:need-confirmation cfg)
               (state/set-section! :sockets))
