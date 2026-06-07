@@ -132,18 +132,31 @@
 (defn warning-banner
   "Well that's what you get for messing with me!"
   []
-  {:fx/type     :h-box
-   :style-class "c64-warning-banner"
-   :spacing     12
-   :padding     {:top 6 :right 8 :bottom 6 :left 8}
+  {:fx/type   :h-box
+   :spacing   12
+   :alignment :center
+   :padding   {:top    6
+               :right  8
+               :bottom 6
+               :left   8}
    :children
-   [{:fx/type     :label
-     :text        "!!! CONFIGURATION NEEDS VERIFICATION - SOCKETS DISABLED UNTIL CONFIRMED !!!"
-     :style-class "c64-warning-text"}
-    {:fx/type     :button
-     :text        "CONFIRM"
-     :on-action   {:event/type :confirm-config}
-     :style-class "c64-button-danger"}]})
+   [{:fx/type     :v-box
+     :style-class "c64-warning-banner"
+     :alignment   :center
+     :spacing     0
+     :children
+     [{:fx/type     :label
+       :text        "!!! CONFIGURATION NEEDS VERIFICATION !!!"
+       :style-class ["c64-warning-text" "c64-text-wrap"]}
+      {:fx/type     :label
+       :text        "!!! SOCKET POWER IS DISABLED UNTIL CONFIRMED !!!"
+       :style-class ["c64-warning-text" "c64-text-wrap"]}
+      {:fx/type     :button
+
+       :text        "CONFIRM"
+       :on-action   {:event/type :confirm-config}
+       :wrap-text   true
+       :style-class "c64-button-danger"}]}]})
 
 (defn nav-panel
   "We navigate the stars together!"
@@ -185,12 +198,19 @@
 (defn action-bar
   "Are you getting any!?"
   [{:keys [connected?]}]
-  {:fx/type  :v-box
-   :spacing  0
+  {:fx/type :v-box
+   :spacing 0
+   :padding {:top    3
+             :right  0
+             :bottom 3
+             :left   0}
    :children
    [{:fx/type     :h-box
      :style-class "c64-hbox"
-     :padding     {:top 4 :right 8 :bottom 2 :left 8}
+     :padding     {:top    4
+                   :right  8
+                   :bottom 2
+                   :left   8}
      :spacing     6
      :children
      [{:fx/type     :button
@@ -233,7 +253,10 @@
        :style-class "c64-button"}]}
     {:fx/type     :h-box
      :style-class "c64-hbox"
-     :padding     {:top 2 :right 8 :bottom 4 :left 8}
+     :padding     {:top    2
+                   :right  8
+                   :bottom 4
+                   :left   8}
      :spacing     6
      :children
      [{:fx/type     :button
@@ -274,11 +297,16 @@
 (defn log-panel
   "It's where the leprechauns hide"
   [{:keys [log]}]
-  {:fx/type  :v-box
-   :spacing  0
+  {:fx/type     :v-box
+   :style-class "c64-log-bar"
+   :spacing     0
    :children
    [{:fx/type     :label
-     :text        " LOG:"
+     :padding     {:top    3
+                   :right  0
+                   :bottom 3
+                   :left   0}
+     :text        "LOG:"
      :style-class "c64-label-dim"}
     (log-text-area {:log log})]})
 
@@ -318,7 +346,9 @@
        {:fx/type  :v-box
         :spacing  0
         :children (cond-> [(title-bar {:connection connection})]
-                    need-confirm? (conj (warning-banner)))}
+                    (and
+                     need-confirm?
+                     connected?) (conj (warning-banner)))}
        :center
        {:fx/type  :h-box
         :children [(nav-panel {:active-section active-section})
