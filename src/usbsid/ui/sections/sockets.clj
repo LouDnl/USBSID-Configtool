@@ -20,55 +20,79 @@
        :text        label
        :style-class "c64-section-header"}
 
-      (w/c64-row "Enabled"
-                 {:fx/type     :toggle-button
-                  :text        (if (:enabled socket) "ON " "OFF")
-                  :selected    (:enabled socket)
-                  :on-action   {:event/type :config-changed
-                                :path       [socket-key :enabled]
-                                :value      (not (:enabled socket))}
-                  :style-class "c64-toggle"})
+      (w/c64-narrow-row "Enabled"
+                        {:fx/type     :toggle-button
+                         :text        (if (:enabled socket) "ON " "OFF")
+                         :selected    (:enabled socket)
+                         :on-action   {:event/type :config-changed
+                                       :path       [socket-key :enabled]
+                                       :value      (not (:enabled socket))}
 
-      (w/c64-row "Chiptype"
-                 {:fx/type          :combo-box
-                  :style-class      ["combo-box" "c64-combo-box"]
-                  :items            (mapv :label chip-types)
-                  :value            (get-in model/chip-type-by-key [(:chiptype socket) :label])
-                  :on-value-changed (fn [v]
-                                      (when-let [ct (first (filter (comp #{v} :label) chip-types))]
-                                        (state/set-config-value! [socket-key :chiptype] (:key ct))))})
-      (w/c64-row "Chip voltage"
-                 {:fx/type     :label
-                  :text        (model/chipvoltage (:chiptype socket) (get-in socket [:sid1 :type]))
-                  :style-class "c64-label-dim"})
+                         :style-class "c64-toggle"})
 
-      (w/c64-row "Dual SID mode"
-                 {:fx/type     :toggle-button
-                  :text        (if (:dualsid socket) "ON " "OFF")
-                  :selected    (:dualsid socket)
-                  :on-action   {:event/type :config-changed
-                                :path       [socket-key :dualsid]
-                                :value      (not (:dualsid socket))}
-                  :style-class "c64-toggle"})
+      (w/c64-narrow-row "Chiptype"
+                        {:fx/type          :combo-box
+                         :style-class      ["combo-box" "c64-combo-box"]
+                         :items            (mapv :label chip-types)
+                         :value            (get-in model/chip-type-by-key [(:chiptype socket) :label])
+                         :on-value-changed (fn [v]
+                                             (when-let [ct (first (filter (comp #{v} :label) chip-types))]
+                                               (state/set-config-value! [socket-key :chiptype] (:key ct))))})
+      (w/c64-narrow-row "Chip voltage"
+                        {:fx/type     :label
+                         :text        (model/chipvoltage (:chiptype socket) (get-in socket [:sid1 :type]))
+                         :style-class "c64-label-dim"})
 
-      (w/c64-row "SID 1 Type"
-                 {:fx/type          :combo-box
-                  :style-class      ["combo-box" "c64-combo-box"]
-                  :items            (mapv :label sid-types)
-                  :value            (get-in model/sid-type-by-key [(get-in socket [:sid1 :type]) :label])
-                  :on-value-changed (fn [v]
-                                      (when-let [st (first (filter (comp #{v} :label) sid-types))]
-                                        (state/set-config-value! [socket-key :sid1 :type] (:key st))))})
+      (w/c64-narrow-row "Dual SID mode"
+                        {:fx/type     :toggle-button
+                         :text        (if (:dualsid socket) "ON " "OFF")
+                         :selected    (:dualsid socket)
+                         :on-action   {:event/type :config-changed
+                                       :path       [socket-key :dualsid]
+                                       :value      (not (:dualsid socket))}
+                         :style-class "c64-toggle"})
 
-      (w/c64-row "SID 2 Type"
-                 {:fx/type          :combo-box
-                  :style-class      ["combo-box" "c64-combo-box"]
-                  :items            (mapv :label sid-types)
-                  :value            (get-in model/sid-type-by-key [(get-in socket [:sid2 :type]) :label])
-                  :disable          (not (:dualsid socket))
-                  :on-value-changed (fn [v]
-                                      (when-let [st (first (filter (comp #{v} :label) sid-types))]
-                                        (state/set-config-value! [socket-key :sid2 :type] (:key st))))})]}))
+      (w/c64-narrow-row "SID 1 Type"
+                        {:fx/type          :combo-box
+                         :style-class      ["combo-box" "c64-combo-box"]
+                         :items            (mapv :label sid-types)
+                         :value            (get-in model/sid-type-by-key [(get-in socket [:sid1 :type]) :label])
+                         :on-value-changed (fn [v]
+                                             (when-let [st (first (filter (comp #{v} :label) sid-types))]
+                                               (state/set-config-value! [socket-key :sid1 :type] (:key st))))})
+      {:fx/type     :h-box
+       :style-class "c64-hbox"
+       :children
+       [{:fx/type     :label
+         :text        (format "addr: 0x%02x id: %s"
+                              (get-in socket [:sid1 :addr])
+                              (if (> (get-in socket [:sid1 :id]) 4)
+                                "n/a"
+                                (get-in socket [:sid1 :id])))
+         :style-class ["c64-label-dim" "c64-text-wrap"]
+         :min-width   200}]}
+
+      (w/c64-narrow-row "SID 2 Type"
+                        {:fx/type          :combo-box
+                         :style-class      ["combo-box" "c64-combo-box"]
+                         :items            (mapv :label sid-types)
+                         :value            (get-in model/sid-type-by-key [(get-in socket [:sid2 :type]) :label])
+                         :disable          (not (:dualsid socket))
+                         :on-value-changed (fn [v]
+                                             (when-let [st (first (filter (comp #{v} :label) sid-types))]
+                                               (state/set-config-value! [socket-key :sid2 :type] (:key st))))})
+
+      {:fx/type     :h-box
+       :style-class "c64-hbox"
+       :children
+       [{:fx/type     :label
+         :text        (format "addr: 0x%02x id: %s"
+                              (get-in socket [:sid2 :addr])
+                              (if (> (get-in socket [:sid2 :id]) 4)
+                                "n/a"
+                                (get-in socket [:sid2 :id])))
+         :style-class ["c64-label-dim" "c64-text-wrap"]
+         :min-width   200}]}]}))
 
 (defn fmopl-panel
   "I'm good at making noises"
@@ -85,25 +109,25 @@
        :text        "(Requires clone SID chip)"
        :style-class "c64-label-dim"}
 
-      (w/c64-row "FMOpl Enabled"
-                 {:fx/type     :toggle-button
-                  :text        (if (get-in config [:fmopl :enabled]) "ON " "OFF")
-                  :selected    (get-in config [:fmopl :enabled])
-                  :on-action   {:event/type :config-changed
-                                :path [:fmopl :enabled]
-                                :value (not (get-in config [:fmopl :enabled]))}
-                  :style-class "c64-toggle"})
+      (w/c64-narrow-row "FMOpl Enabled"
+                        {:fx/type     :toggle-button
+                         :text        (if (get-in config [:fmopl :enabled]) "ON " "OFF")
+                         :selected    (get-in config [:fmopl :enabled])
+                         :on-action   {:event/type :config-changed
+                                       :path [:fmopl :enabled]
+                                       :value (not (get-in config [:fmopl :enabled]))}
+                         :style-class "c64-toggle"})
 
-      (w/c64-row "FMOpl SID No."
-                 {:fx/type     :label
-                  :text        (:label
-                                (first
-                                 (filter
-                                  (if (not (get-in config [:fmopl :enabled]))
-                                    (comp #{(get-in config [:fmopl :sidno])} :key)
-                                    (comp #{0} :key))
-                                  model/fmopl-sid-options)))
-                  :style-class "c64-label-dim"})]}]})
+      (w/c64-narrow-row "FMOpl SID No."
+                        {:fx/type     :label
+                         :text        (:label
+                                       (first
+                                        (filter
+                                         (if (not (get-in config [:fmopl :enabled]))
+                                           (comp #{(get-in config [:fmopl :sidno])} :key)
+                                           (comp #{0} :key))
+                                         model/fmopl-sid-options)))
+                         :style-class "c64-label-dim"})]}]})
 
 (defn preset-panel
   "If your lazy like, kinda..."
