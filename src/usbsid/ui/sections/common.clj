@@ -84,9 +84,18 @@
   {:fx/type :v-box
    :children
    [(w/c64-header "PCB REVISIONS")
-    {:fx/type :label :text "v1.0 / v1.2 : Standard - no audio switch." :style-class "c64-label"}
-    {:fx/type :label :text "v1.3+       : Audio switch (mono/stereo)."  :style-class "c64-label"}
-    {:fx/type :label :text "v1.5+       : Socket change detection + confirmation." :style-class "c64-label"}]})
+    {:fx/type     :label
+     :text        "v1.0 / v1.2 : Standard - no audio switch."
+     :style-class "c64-label"}
+    {:fx/type     :label
+     :text        "v1.3+       : Audio switch (mono/stereo)."
+     :style-class "c64-label"}
+    {:fx/type     :label
+     :text        "v1.5+       : Automatic voltage configuration"
+     :style-class "c64-label" }
+    {:fx/type     :label
+     :text        "              with socket change detection + confirmation."
+     :style-class "c64-label" }]})
 
 (def links-text-block
   {:fx/type :v-box
