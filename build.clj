@@ -40,14 +40,18 @@
         (println (str "  Installed " jar-name " -> " (.getAbsolutePath target-dir)))))))
 
 ; JVM args for JavaFX 11+ running from a fat jar (non-modular classpath mode)
+(def jfx-opts
+  ["--add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED"
+   "--add-opens=javafx.base/com.sun.javafx.runtime=ALL-UNNAMED"
+   "--add-opens=javafx.controls/com.sun.javafx.scene.control=ALL-UNNAMED"])
+(def java-opts
+  ["--enable-native-access=ALL-UNNAMED"
+   "--sun-misc-unsafe-memory-access=allow"
+   "-Dcljfx.skip-javafx-initialization=true"])
 (def jfx-jvm-args
-  (string/join " "
-               ["--add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED"
-                "--add-opens=javafx.base/com.sun.javafx.runtime=ALL-UNNAMED"
-                "--add-opens=javafx.controls/com.sun.javafx.scene.control=ALL-UNNAMED"
-                "--enable-native-access=ALL-UNNAMED"
-                "--sun-misc-unsafe-memory-access=allow"
-                "-Dcljfx.skip-javafx-initialization=true"]))
+  (string/join " " (into jfx-opts java-opts)))
+(def jpackage-opts
+  (into jfx-opts java-opts))
 
 ; test
 
@@ -75,10 +79,11 @@
     (println "\nCopying sources and resources...")
     (b/copy-dir {:src-dirs ["src" "resources"] :target-dir class-dir})
     (println (str "\nCompiling " main "..."))
-    (b/compile-clj {:basis     basis
-                    :src-dirs  ["src"]
-                    :class-dir class-dir
-                    :ns-compile [main]})
+    (b/compile-clj {:basis      basis
+                    :src-dirs   ["src"]
+                    :class-dir  class-dir
+                    :ns-compile [main]
+                    :java-opts  java-opts})
     (println "\nBuilding uberjar...")
     (let [skip (fn [_] nil)]  ; skip duplicate - return nil = no write
       (b/uber {:class-dir class-dir
@@ -119,7 +124,7 @@
       (string/includes? os "linux")   "app-image"
       (string/includes? os "windows") "exe"
       (string/includes? os "mac")     "dmg"
-      :else                        "app-image")))
+      :else                           "app-image")))
 
 ; ISSUE:
 
@@ -162,21 +167,27 @@
     (.mkdirs (File. dest))
     (b/copy-file {:src uber-file :target (str input-dir "/" jar-name)})
     (println (str "\nPackaging as " pkg-type " -> " dest "/..."))
-    (let [{:keys [exit]}
+    (let [win? (string/includes?
+                (string/lower-case
+                 (System/getProperty "os.name"))
+                "windows")
+          {:keys [exit]}
           (b/process
            {:command-args
-            ["jpackage"
-             "--type"           pkg-type
-             "--name"           app-name
-             "--app-version"    ver
-             "--input"          input-dir
-             "--main-jar"       jar-name
-             "--main-class"     "usbsid.core"
-             "--dest"           dest
-             "--vendor"         "LouD"
-             "--description"    "USBSID-Pico Configuration Tool"
-              ; jfx-jvm-args not passed here: app-image bundles a JRE with JavaFX already present
-             "--copyright"      "Copyright 2024-2026 LouD, GPLv2"]})]
+            (cond-> (into
+                     ["jpackage"
+                      "--type"           pkg-type
+                      "--name"           app-name
+                      "--app-version"    ver
+                      "--input"          input-dir
+                      "--main-jar"       jar-name
+                      "--main-class"     "usbsid.core"
+                      "--dest"           dest
+                      "--vendor"         "LouD"
+                      "--description"    "USBSID-Pico Configuration Tool"
+                      "--copyright"      "Copyright 2024-2026 LouD, GPLv2"]
+                     (mapcat #(vector "--java-options" %) jpackage-opts))
+              win? (conj "--win-console"))})]
       (if (zero? exit)
         (println (str "Package created in " dest "/"))
         (throw (ex-info "jpackage failed" {:exit exit})))))
