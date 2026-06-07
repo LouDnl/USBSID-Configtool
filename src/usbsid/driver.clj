@@ -258,10 +258,9 @@
     (fn []
       (reset! drv-atom (USBSID.))
       (state/log! "Connecting to USBSID-Pico")
-      (let [windows? (USBSIDDevice/isWinblows)
-            result   (if windows?
-                       (.USBSID_init @drv-atom "libusb-winusb" (int 8192) (int 64))
-                       (.USBSID_init @drv-atom))]
+      (let [result (if (USBSIDDevice/isWinblows)
+                     (.USBSID_init @drv-atom "libusb-winusb" (int 8192) (int 64))
+                     (.USBSID_init @drv-atom))]
         (if (zero? result)
           (let [fw  (read-with-retry #(do-read-fwversion) valid-fw-version? 3 50)
                 pcb (read-with-retry #(do-read-pcbversion) valid-pcb-version? 3 50)]
