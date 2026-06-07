@@ -147,7 +147,11 @@
         jar-name  (str (name lib) "-" version ".jar")
         input-dir "target/jpackage-input"
         dest      "target/package"
-        ver       (string/replace version "-SNAPSHOT" "")]
+        ver       (let [v  (string/replace version "-SNAPSHOT" "")
+                        os (string/lower-case (System/getProperty "os.name"))]
+                    (if (string/includes? os "mac")
+                      (str "v" v)
+                      v))]
     ; Copy only the JAR into a clean input dir (avoids jpackage recursing into dest)
     (b/delete {:path input-dir})
     (b/delete {:path dest})
