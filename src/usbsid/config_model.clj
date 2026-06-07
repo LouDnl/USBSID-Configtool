@@ -134,4 +134,5 @@
    :flipped              false
    :mixed                false
    :need-confirmation    false
-   :disable-changedetect false})
+   :disable-changedetect false
+   :raw-config           nil}) ; save the raw config bytes just in case we need to verify things

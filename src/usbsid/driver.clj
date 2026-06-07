@@ -39,7 +39,10 @@
         s1-id2    (bit-shift-right (bit-and (g 13) 0xF0) 4)
         s2-id1    (bit-and (g 24) 0xF)
         s2-id2    (bit-shift-right (bit-and (g 24) 0xF0) 4)]
-    {:need-confirmation    (pos? (g 2)) ; Need configuration confirmation v1.5+ only
+    {; future use
+     :raw-config           buf
+     ; states
+     :need-confirmation    (pos? (g 2)) ; Need configuration confirmation v1.5+ only
      :disable-changedetect (pos? (g 3)) ; Disable socket change detection v1.5+ only
      ; Clockworx
      :lock-clockrate       (pos? (g 5))
