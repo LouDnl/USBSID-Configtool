@@ -176,7 +176,10 @@
    until valid-fn returns true. Returns last result regardless."
   [read-fn valid-fn max-attempts delay-ms]
   (loop [n max-attempts]
-    (let [result (try (read-fn) (catch Exception _ nil))]
+    (let [result (try (read-fn)
+                      (catch Exception e
+                        (state/log! (str "Read error: " (.getClass e) " - " (.getMessage e)))
+                        nil))]
       (cond
         (valid-fn result) result
         (pos? n)          (do (Thread/sleep delay-ms) (recur (dec n)))
@@ -257,8 +260,8 @@
       (state/log! "Connecting to USBSID-Pico")
       (let [result (.USBSID_init @drv-atom)]
         (if (zero? result)
-          (let [fw  (read-with-retry #(do-read-pcbversion) valid-fw-version? 3 50)
-                pcb (read-with-retry #(do-read-fwversion) valid-pcb-version? 3 50)]
+          (let [fw  (read-with-retry #(do-read-fwversion) valid-fw-version? 3 50)
+                pcb (read-with-retry #(do-read-pcbversion) valid-pcb-version? 3 50)]
             (state/set-connection! :connected fw pcb)
             (state/log! (format "Connected! FW: v%s PCB: v%s" fw pcb))
             @(read-config!))
