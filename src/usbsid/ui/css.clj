@@ -1,6 +1,7 @@
 (ns usbsid.ui.css
   "I make things pritteh!"
   (:require
+   [clojure.java.io :as io]
    [cljfx.css :as css]))
 
 
@@ -12,13 +13,13 @@
   (css/register
    ::font-c64-pro-mono
    {"@font-face" {:-font-family "'C64 Pro Mono'"
-                  :-src         "url('C64_Pro_Mono-STYLE.ttf')"}}))
+                  :-src         (str "url('" (io/resource "C64_Pro_Mono-STYLE.ttf") "')")}}))
 
 (def ^:private font-c64-pro
   (css/register
    ::font-c64-pro
    {"@font-face" {:-font-family "'C64 Pro'"
-                  :-src         "url('C64_Pro-STYLE.ttf')"}}))
+                  :-src         (str "url('" (io/resource "C64_Pro-STYLE.ttf") "')")}}))
 
 (def style
   (css/register
