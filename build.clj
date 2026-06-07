@@ -147,10 +147,13 @@
         jar-name  (str (name lib) "-" version ".jar")
         input-dir "target/jpackage-input"
         dest      "target/package"
-        ver       (let [v  (string/replace version "-SNAPSHOT" "")
-                        os (string/lower-case (System/getProperty "os.name"))]
-                    (if (string/includes? os "mac")
-                      (str "v" v)
+        ; macOS jpackage requires integers only, first component > 0.
+        ; On macOS only: bump leading 0 to 1 (0.1.0 → 1.1.0) in package metadata.
+        ver       (let [v     (string/replace version "-SNAPSHOT" "")
+                        macos (string/includes? (string/lower-case (System/getProperty "os.name")) "mac")
+                        parts (string/split v #"\." 3)]
+                    (if (and macos (= "0" (first parts)))
+                      (string/join "." (cons "1" (rest parts)))
                       v))]
     ; Copy only the JAR into a clean input dir (avoids jpackage recursing into dest)
     (b/delete {:path input-dir})
