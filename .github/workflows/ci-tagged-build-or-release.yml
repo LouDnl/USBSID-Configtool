@@ -186,17 +186,16 @@ jobs:
           name: package-${{ matrix.platform }}
           path: staging/*
 
-  # 4. GitHub Release — v* tags only
+  # 4a. Tagged build pre-release — d* tags only
 
-  release:
-    name: Publish GitHub Release
-    if: startsWith(github.ref, 'refs/tags/v')
+  prerelease:
+    name: Publish Pre-release
+    if: startsWith(github.ref, 'refs/tags/d')
     needs: [ci, package]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      # Collect all five platform packages into dist/
       - name: Download platform packages
         uses: actions/download-artifact@v4
         with:
@@ -204,7 +203,6 @@ jobs:
           path: dist
           merge-multiple: true
 
-      # upload-artifact@v4 strips target/ prefix, files are at dist-jar/ directly
       - name: Download JAR and launchers
         uses: actions/download-artifact@v4
         with:
@@ -217,9 +215,47 @@ jobs:
           cp dist-jar/run.sh  dist/
           cp dist-jar/run.bat dist/
 
-      - name: Create GitHub Release
+      - name: Create Pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Tagged build ${{ github.ref_name }}
+          generate_release_notes: false
+          prerelease: true
+          files: dist/*
+
+  # 4b. Stable release — v* tags only
+
+  release:
+    name: Publish Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [ci, package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download platform packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: package-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download JAR and launchers
+        uses: actions/download-artifact@v4
+        with:
+          name: jar-and-launchers
+          path: dist-jar
+
+      - name: Collect all release files
+        run: |
+          cp dist-jar/usbsid-configtool-*.jar dist/
+          cp dist-jar/run.sh  dist/
+          cp dist-jar/run.bat dist/
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ github.ref_name }}
           generate_release_notes: true
+          prerelease: false
           files: dist/*
