@@ -1,7 +1,7 @@
 (ns usbsid.ini-io
   "Read and write the damn thing"
   (:require
-   [clojure.string :as str]
+   [clojure.string :as string]
    [usbsid.config-model :as model]))
 
 
@@ -46,7 +46,7 @@
         s2  (:socket-two cfg)
         led (:led cfg)
         rgb (:rgbled cfg)]
-    (str/join
+    (string/join
      "\n"
      ["[General]"
       "; Version is for reference only"
@@ -63,9 +63,9 @@
       (str "enabled = " (bool->s (:enabled s1)))
       "; Possible options: Disabled, Enabled"
       (str "dualsid = " (dual->s (:dualsid s1)))
-      (str "; Possible chiptypes: " (str/join ", " chiptype-labels))
+      (str "; Possible chiptypes: " (string/join ", " chiptype-labels))
       (str "chiptype = " (chip->s (:chiptype s1)))
-      (str "; Possible sidtypes: " (str/join ", " sidtype-labels))
+      (str "; Possible sidtypes: " (string/join ", " sidtype-labels))
       (str "sid1type = " (sid->s (get-in s1 [:sid1 :type])))
       (str "sid2type = " (sid->s (get-in s1 [:sid2 :type])))
       ""
@@ -74,9 +74,9 @@
       (str "enabled = " (bool->s (:enabled s2)))
       "; Possible options: Disabled, Enabled"
       (str "dualsid = " (dual->s (:dualsid s2)))
-      (str "; Possible chiptypes: " (str/join ", " chiptype-labels))
+      (str "; Possible chiptypes: " (string/join ", " chiptype-labels))
       (str "chiptype = " (chip->s (:chiptype s2)))
-      (str "; Possible sidtypes: " (str/join ", " sidtype-labels))
+      (str "; Possible sidtypes: " (string/join ", " sidtype-labels))
       (str "sid1type = " (sid->s (get-in s2 [:sid1 :type])))
       (str "sid2type = " (sid->s (get-in s2 [:sid2 :type])))
       ""
@@ -118,19 +118,19 @@
 
 (defn- s->bool
   [s]
-  (= "True" (str/trim s)))
+  (= "True" (string/trim s)))
 
 (defn- s->dual
   [s]
-  (= "Enabled" (str/trim s)))
+  (= "Enabled" (string/trim s)))
 
 (defn- s->audio
   [s]
-  (= "Stereo" (str/trim s)))
+  (= "Stereo" (string/trim s)))
 
 (defn- s->chip
   [s]
-  (let [v (str/trim s)
+  (let [v (string/trim s)
         ; "Real" is an old format alias for "MOS"
         v (if (= v "Real") "MOS" v)
         ; "Clone" was used generically - map to :unknown
@@ -141,7 +141,7 @@
 
 (defn- s->sid
   [s]
-  (let [v (str/trim s)
+  (let [v (string/trim s)
         ; Normalise "MOS8580" -> "8580", "MOS6581" -> "6581" for compat
         v (cond (= v "MOS8580") "8580"
                 (= v "MOS6581") "6581"
@@ -151,35 +151,37 @@
 
 (defn- s->clk
   [s]
-  (let [v (try (Integer/parseInt (str/trim s)) (catch Exception _ 985248))]
+  (let [v (try (Integer/parseInt (string/trim s)) (catch Exception _ 985248))]
     (:key (first (filter (comp #{v} :value) model/clock-rates)) :pal)))
 
 (defn- parse-ini-lines
   [lines]
   (reduce
-   (fn [{:keys [section] :as acc} line]
-     (let [line (str/trim line)]
+   (fn [{:keys [section]
+         :as   acc} line]
+     (let [line (string/trim line)]
        (cond
-         (str/starts-with? line ";")  acc ; comment
-         (str/starts-with? line "#")  acc ; comment
-         (str/blank? line)            acc
-         (str/starts-with? line "[")
+         (string/starts-with? line ";")  acc ; comment
+         (string/starts-with? line "#")  acc ; comment
+         (string/blank? line)            acc
+         (string/starts-with? line "[")
          (assoc acc :section (-> line
-                                 (str/replace "[" "")
-                                 (str/replace "]" "")
-                                 str/trim))
-         (str/includes? line "=")
-         (let [[k v] (str/split line #"=" 2)]
-           (assoc-in acc [:kv section (str/trim k)] (str/trim v)))
+                                 (string/replace "[" "")
+                                 (string/replace "]" "")
+                                 string/trim))
+         (string/includes? line "=")
+         (let [[k v] (string/split line #"=" 2)]
+           (assoc-in acc [:kv section (string/trim k)] (string/trim v)))
          :else acc)))
-   {:section nil :kv {}}
+   {:section nil
+    :kv      {}}
    lines))
 
 (defn ini->config
   "Parses INI string into partial config map.
    Merges over base-config to preserve fields not present in INI (e.g. FMOpl sidno)."
   [ini-str base-config]
-  (let [{:keys [kv]} (parse-ini-lines (str/split-lines ini-str))
+  (let [{:keys [kv]} (parse-ini-lines (string/split-lines ini-str))
         g            (fn [section k] (get-in kv [section k]))
         upd          (fn [cfg path f section k]
                        (if-let [v (g section k)]

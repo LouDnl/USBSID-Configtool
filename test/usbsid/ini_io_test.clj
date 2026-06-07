@@ -1,7 +1,7 @@
 (ns usbsid.ini-io-test
   (:require
    [clojure.test        :refer [deftest is testing are]]
-   [clojure.string      :as str]
+   [clojure.string      :as string]
    [usbsid.ini-io       :as ini-io]
    [usbsid.config-model :as model]))
 
@@ -9,7 +9,7 @@
 
 (deftest export-sections-present
   (let [out (ini-io/config->ini model/initial-config "v0.6.0")]
-    (are [s] (str/includes? out s)
+    (are [s] (string/includes? out s)
       "[General]"
       "[socketOne]"
       "[socketTwo]"
@@ -21,81 +21,81 @@
 
 (deftest export-version
   (let [out (ini-io/config->ini model/initial-config "v0.6.0-BETA")]
-    (is (str/includes? out "version = v0.6.0-BETA"))))
+    (is (string/includes? out "version = v0.6.0-BETA"))))
 
 (deftest export-version-nil
   (let [out (ini-io/config->ini model/initial-config nil)]
-    (is (str/includes? out "version = v0.0.0-DEFAULT.19000101"))))
+    (is (string/includes? out "version = v0.0.0-DEFAULT.19000101"))))
 
 (deftest export-clock-pal
   (let [cfg (assoc model/initial-config :clock-rate :pal)
         out (ini-io/config->ini cfg nil)]
-    (is (str/includes? out "clock_rate = 985248"))))
+    (is (string/includes? out "clock_rate = 985248"))))
 
 (deftest export-clock-ntsc
   (let [cfg (assoc model/initial-config :clock-rate :ntsc)
         out (ini-io/config->ini cfg nil)]
-    (is (str/includes? out "clock_rate = 1022727"))))
+    (is (string/includes? out "clock_rate = 1022727"))))
 
 (deftest export-lock-clockrate
   (testing "true"
     (let [out (ini-io/config->ini (assoc model/initial-config :lock-clockrate true) nil)]
-      (is (str/includes? out "lock_clockrate = True"))))
+      (is (string/includes? out "lock_clockrate = True"))))
   (testing "false"
     (let [out (ini-io/config->ini (assoc model/initial-config :lock-clockrate false) nil)]
-      (is (str/includes? out "lock_clockrate = False")))))
+      (is (string/includes? out "lock_clockrate = False")))))
 
 (deftest export-socket-chiptype
   (let [cfg (assoc-in model/initial-config [:socket-one :chiptype] :skpico)
         out (ini-io/config->ini cfg nil)]
-    (is (str/includes? out "chiptype = SKPico"))))
+    (is (string/includes? out "chiptype = SKPico"))))
 
 (deftest export-socket-chiptype-real
   (let [cfg (assoc-in model/initial-config [:socket-one :chiptype] :real)
         out (ini-io/config->ini cfg nil)]
-    (is (str/includes? out "chiptype = MOS"))))
+    (is (string/includes? out "chiptype = MOS"))))
 
 (deftest export-sid-types
   (let [cfg (-> model/initial-config
                 (assoc-in [:socket-one :sid1 :type] :mos8580)
                 (assoc-in [:socket-one :sid2 :type] :mos6581))
         out (ini-io/config->ini cfg nil)]
-    (is (str/includes? out "sid1type = 8580"))
-    (is (str/includes? out "sid2type = 6581"))))
+    (is (string/includes? out "sid1type = 8580"))
+    (is (string/includes? out "sid2type = 6581"))))
 
 (deftest export-dualsid
   (testing "enabled"
     (let [out (ini-io/config->ini (assoc-in model/initial-config [:socket-one :dualsid] true) nil)]
-      (is (str/includes? out "dualsid = Enabled"))))
+      (is (string/includes? out "dualsid = Enabled"))))
   (testing "disabled"
     (let [out (ini-io/config->ini (assoc-in model/initial-config [:socket-one :dualsid] false) nil)]
-      (is (str/includes? out "dualsid = Disabled")))))
+      (is (string/includes? out "dualsid = Disabled")))))
 
 (deftest export-features
   (let [cfg (assoc model/initial-config :mirrored true :flipped false :mixed true)
         out (ini-io/config->ini cfg nil)]
-    (is (str/includes? out "mirrored = True"))
-    (is (str/includes? out "flipped  = False"))
-    (is (str/includes? out "mixed    = True"))))
+    (is (string/includes? out "mirrored = True"))
+    (is (string/includes? out "flipped  = False"))
+    (is (string/includes? out "mixed    = True"))))
 
 (deftest export-led
   (let [cfg (assoc model/initial-config :led {:enabled true :idle-breathe false})
         out (ini-io/config->ini cfg nil)]
-    (is (str/includes? out "[LED]"))
-    (is (str/includes? out "idle_breathe = False"))))
+    (is (string/includes? out "[LED]"))
+    (is (string/includes? out "idle_breathe = False"))))
 
 (deftest export-rgbled
   (let [cfg (assoc model/initial-config :rgbled {:enabled true :idle-breathe false
                                                   :brightness 200 :sid-to-use 3})
         out (ini-io/config->ini cfg nil)]
-    (is (str/includes? out "brightness = 200"))
-    (is (str/includes? out "sid_to_use = 3"))))
+    (is (string/includes? out "brightness = 200"))
+    (is (string/includes? out "sid_to_use = 3"))))
 
 (deftest export-audioswitch
   (let [cfg (assoc model/initial-config :stereo-en true :lock-audio-sw false)
         out (ini-io/config->ini cfg nil)]
-    (is (str/includes? out "set_to = Stereo"))
-    (is (str/includes? out "lock_audio_switch = False"))))
+    (is (string/includes? out "set_to = Stereo"))
+    (is (string/includes? out "lock_audio_switch = False"))))
 
 ; ── import helpers ────────────────────────────────────────────────────────────
 
