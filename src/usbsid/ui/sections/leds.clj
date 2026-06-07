@@ -96,7 +96,7 @@
                                             (state/set-config-value!
                                              [:rgbled :sid-to-use] (:key s))))})
 
-          (w/c64-labeled-slider (format "%-24s" "Brightness") 0 255 (:brightness rgb)
+          (w/c64-labeled-slider (format "%-20s" "Brightness") 0 255 (:brightness rgb)
                                 (fn [v]
                                   (state/set-config-value!
                                    [:rgbled :brightness] (int v)))
