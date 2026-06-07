@@ -46,8 +46,9 @@
    "--add-opens=javafx.controls/com.sun.javafx.scene.control=ALL-UNNAMED"])
 (def java-opts
   ["--enable-native-access=ALL-UNNAMED"
-   "--sun-misc-unsafe-memory-access=allow"
-   "-Dcljfx.skip-javafx-initialization=true"])
+   "--sun-misc-unsafe-memory-access=allow"])
+(def compile-opts
+  (conj java-opts "-Dcljfx.skip-javafx-initialization=true"))
 (def jfx-jvm-args
   (string/join " " (into jfx-opts java-opts)))
 (def jpackage-opts
@@ -83,7 +84,7 @@
                     :src-dirs   ["src"]
                     :class-dir  class-dir
                     :ns-compile [main]
-                    :java-opts  java-opts})
+                    :java-opts  compile-opts})
     (println "\nBuilding uberjar...")
     (let [skip (fn [_] nil)]  ; skip duplicate - return nil = no write
       (b/uber {:class-dir class-dir
