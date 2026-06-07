@@ -25,28 +25,30 @@
        :style-class "c64-section"
        :spacing     6
        :children
-       [(w/c64-row "Clock Rate"
-                   (w/c64-combo
-                    model/clock-rates
-                    (:clock-rate config)
-                    (fn [v]
-                      (when-let [c (first (filter (comp #{v} :label) model/clock-rates))]
-                        (state/set-config-value! [:clock-rate] (:key c))))
-                    {:disabled      (or
-                                     (:lock-clockrate config)
-                                     (:external-clock config))
-                     :comboboxclass "c64-combo-box-wide"}))
+       [(w/c64-narrow-row "Clock Rate"
+                          (w/c64-combo
+                           model/clock-rates
+                           (:clock-rate config)
+                           (fn [v]
+                             (when-let [c (first (filter (comp #{v} :label) model/clock-rates))]
+                               (state/set-config-value! [:clock-rate] (:key c))))
+                           {:disabled      (or
+                                            (:lock-clockrate config)
+                                            (:external-clock config))
+                            :comboboxclass "c64-combo-box-wide"}))
 
-        (w/c64-labeled-toggle "Lock Clock Rate"
-                              (:lock-clockrate config)
-                              {:event/type :config-changed
-                               :path       [:lock-clockrate]
-                               :value      (not (:lock-clockrate config))}
-                              {:disabled (:external-clock config)})
+        (w/c64-narrow-row "Lock Clock Rate"
+                          (w/c64-toggle
+                           (:lock-clockrate config)
+                           {:event/type :config-changed
+                            :path       [:lock-clockrate]
+                            :value      (not (:lock-clockrate config))}
+                           (:external-clock config)))
 
-        (w/c64-labeled-toggle "External Clock"
-                              (:external-clock config)
-                              {:event/type :config-changed
-                               :path       [:external-clock]
-                               :value      (not (:external-clock config))}
-                              {:disabled   (:lock-clockrate config)})]}]}]})
+        (w/c64-narrow-row "External Clock"
+                          (w/c64-toggle
+                           (:external-clock config)
+                           {:event/type :config-changed
+                            :path       [:external-clock]
+                            :value      (not (:external-clock config))}
+                           (:lock-clockrate config)))]}]}]})
