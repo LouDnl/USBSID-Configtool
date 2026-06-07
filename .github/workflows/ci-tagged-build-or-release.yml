@@ -141,11 +141,13 @@ jobs:
           cp assets/driver/usbsid-usb-driver-library-java-1.1.jar "$DIR/"
           cp assets/driver/usbsid-usb-driver-library-java-1.1.pom "$DIR/"
 
-      # Download the pre-built JAR from the ci job so jpackage skips the uber step
+      # upload-artifact@v4 strips the common path prefix (target/) from the artifact,
+      # so download explicitly into target/ to restore the expected location.
       - name: Download JAR from CI
         uses: actions/download-artifact@v4
         with:
           name: jar-and-launchers
+          path: target
 
       - name: Build platform package
         shell: bash
@@ -202,7 +204,7 @@ jobs:
           path: dist
           merge-multiple: true
 
-      # JAR has a target/ prefix in its artifact — download separately then flatten
+      # upload-artifact@v4 strips target/ prefix, files are at dist-jar/ directly
       - name: Download JAR and launchers
         uses: actions/download-artifact@v4
         with:
@@ -211,9 +213,9 @@ jobs:
 
       - name: Collect all release files
         run: |
-          cp dist-jar/target/usbsid-configtool-*.jar dist/
-          cp dist-jar/target/run.sh  dist/
-          cp dist-jar/target/run.bat dist/
+          cp dist-jar/usbsid-configtool-*.jar dist/
+          cp dist-jar/run.sh  dist/
+          cp dist-jar/run.bat dist/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
