@@ -187,7 +187,11 @@
                       "--description"    "USBSID-Pico Configuration Tool"
                       "--copyright"      "Copyright 2024-2026 LouD, GPLv2"]
                      (mapcat #(vector "--java-options" %) jpackage-opts))
-              win? (conj "--win-console"))})]
+              win? (into ["--win-menu"
+                          "--win-menu-group"    "USBSID-Pico"
+                          "--win-shortcut"
+                          "--win-dir-chooser"
+                          "--win-upgrade-uuid"  "b2e8c4f1-3a5d-4e6b-9c7d-0f1e2a3b4c5d"]))})]
       (if (zero? exit)
         (println (str "Package created in " dest "/"))
         (throw (ex-info "jpackage failed" {:exit exit})))))
