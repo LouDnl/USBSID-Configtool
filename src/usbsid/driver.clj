@@ -9,7 +9,7 @@
    [usbsid USBSID USBSIDDevice Config$Cfg Config$CLK Cmd]))
 
 
-(defonce ^:private drv-atom (atom (USBSID.)))
+(defonce ^:private drv-atom (atom nil))
 
 
 ;;; Byte helpers
@@ -259,8 +259,12 @@
       (reset! drv-atom (USBSID.))
       (state/log! "Connecting to USBSID-Pico")
       (let [result (if (USBSIDDevice/isWinblows)
-                     (.USBSID_init @drv-atom "libusb-winusb" (int 8192) (int 64))
-                     (.USBSID_init @drv-atom))]
+                     (do
+                       (USBSIDDevice/setdriver_USBSID "libusb-winusb")
+                       (.USBSID_init @drv-atom))
+                     (do
+                       (USBSIDDevice/setdriver_USBSID "usbx")
+                       (.USBSID_init @drv-atom)))]
         (if (zero? result)
           (let [fw  (read-with-retry #(do-read-fwversion) valid-fw-version? 3 50)
                 pcb (read-with-retry #(do-read-pcbversion) valid-pcb-version? 3 50)]
@@ -279,6 +283,7 @@
       ; Don't care for Exceptions on disconnect, stops flow otherwise
       (try (.USBSID_exit @drv-atom) (catch Exception _ nil))
       (state/set-connection! :disconnected nil nil) ; Will also set config-loaded to nothing
+      (reset! drv-atom nil)
       (state/log! "Disconnected."))))
 
 (defn write-config!
