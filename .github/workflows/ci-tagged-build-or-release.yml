@@ -129,7 +129,7 @@ jobs:
           - os: ubuntu-latest
             platform: linux-appimage   # self-contained .AppImage
           - os: windows-latest
-            platform: windows          # jpackage .exe installer
+            platform: windows          # jpackage .msi installer
           - os: macos-15-intel         # Intel x86_64
             platform: macos-intel      # jpackage .dmg
           - os: macos-14               # Apple Silicon arm64
@@ -196,7 +196,7 @@ jobs:
             cp target/appimage/*.AppImage staging/
 
           elif [ "${{ matrix.platform }}" = "windows" ]; then
-            cp target/package/*.exe "staging/USBSID-Pico-Configtool-${VERSION}-windows.exe"
+            cp target/package/*.msi "staging/USBSID-Pico-Configtool-${VERSION}-windows.msi"
 
           elif [ "${{ matrix.platform }}" = "macos-intel" ]; then
             cp target/package/*.dmg "staging/USBSID-Pico-Configtool-${VERSION}-macos-x86_64.dmg"
