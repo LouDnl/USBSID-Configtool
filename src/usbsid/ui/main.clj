@@ -46,7 +46,7 @@
 (defn- icon-image
   "It's so smol!"
   []
-  (try (Image. (str (io/resource "usbsid-configtool-icon.png")))
+  (try (Image. (str (io/resource "usbsid-configtool-icon-flat.png")))
        (catch Exception _ nil)))
 
 

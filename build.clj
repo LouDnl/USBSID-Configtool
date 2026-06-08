@@ -168,10 +168,13 @@
     (.mkdirs (File. dest))
     (b/copy-file {:src uber-file :target (str input-dir "/" jar-name)})
     (println (str "\nPackaging as " pkg-type " -> " dest "/..."))
-    (let [win? (string/includes?
-                (string/lower-case
-                 (System/getProperty "os.name"))
-                "windows")
+    (let [os    (string/lower-case (System/getProperty "os.name"))
+          win?  (string/includes? os "windows")
+          icon  (cond
+                  win?                          "resources/usbsid-configtool-icon.ico"
+                  (string/includes? os "linux") "resources/usbsid-configtool-icon-flat.png"
+                  (string/includes? os "mac")   "resources/usbsid-configtool-icon.icns"
+                  :else                         nil)
           {:keys [exit]}
           (b/process
            {:command-args
@@ -188,6 +191,7 @@
                       "--description"    "USBSID-Pico Configuration Tool"
                       "--copyright"      "Copyright 2024-2026 LouD, GPLv2"]
                      (mapcat #(vector "--java-options" %) jpackage-opts))
+              (and icon (.exists (File. ^String icon))) (into ["--icon" icon])
               win? (into ["--win-menu"
                           "--win-menu-group"    "USBSID-Pico"
                           "--win-shortcut"
