@@ -123,7 +123,7 @@
   (let [os (string/lower-case (System/getProperty "os.name"))]
     (cond
       (string/includes? os "linux")   "app-image"
-      (string/includes? os "windows") "exe"
+      (string/includes? os "windows") "msi"
       (string/includes? os "mac")     "dmg"
       :else                           "app-image")))
 
@@ -143,7 +143,7 @@
 (defn package
   "Create a platform-native package using jpackage.
   On Linux: app-image (self-contained directory).
-  On Windows: exe installer (requires WiX toolset for msi, or NSIS).
+  On Windows: msi installer (requires WiX toolset), per-user install scope.
   On macOS: dmg image.
   NOTE: cross-compilation not supported - run on each target platform."
   [opts]
@@ -192,6 +192,7 @@
                           "--win-menu-group"    "USBSID-Pico"
                           "--win-shortcut"
                           "--win-dir-chooser"
+                          "--win-per-user-install"
                           "--win-upgrade-uuid"  "b2e8c4f1-3a5d-4e6b-9c7d-0f1e2a3b4c5d"]))})]
       (if (zero? exit)
         (println (str "Package created in " dest "/"))
