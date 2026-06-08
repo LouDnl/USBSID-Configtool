@@ -46,7 +46,7 @@
    "--add-opens=javafx.controls/com.sun.javafx.scene.control=ALL-UNNAMED"])
 (def java-opts
   ["--enable-native-access=ALL-UNNAMED"
-   "--sun-misc-unsafe-memory-access=allow"])
+   "--sun-misc-unsafe-memory-access=allow"]) ; JVM 22+
 (def compile-opts
   (conj java-opts "-Dcljfx.skip-javafx-initialization=true"))
 (def jfx-jvm-args
