@@ -10,34 +10,53 @@ It also uses [cljfx](https://github.com/cljfx/cljfx) which is an extensive wrapp
 To communicate with USBSID-Pico it uses the [Java driver](https://github.com/LouDnl/USBSID-Pico-driver/tree/master/java/usbsid-usb-driver-library-java) I made which is separately available, but not needed for the releases (it's included).  
 The driver runs on top of [javax.usb](https://javax-usb.sourceforge.net/) or [usb4java](https://github.com/usb4java/usb4java) depending on the platform you are on!  
 
+## Requirements
+Due to breaking changes in the way the socket values are displayed a minimal USBSID-Pico firmware version is `0.6.4-BETA`, advised is `0.7.0-BETA`.  
+These changes are visual only for pcb v1.3 and lower, but required for pcb v1.4 and higher due to voltage configuration.
 
 ## Installation
+Download from https://github.com/LouD/USBSID-Pico-Configtool/releases
 
-Download from https://github.com/LouD/USBSID-Pico-Configtool
+## Supported platforms
+All including (driver/javafx) formats:  
+Linux -> `USBSID-Pico-Configtool-0.1.0-x86_64.AppImage`  
+Linux -> `USBSID-Pico-Configtool-0.1.0-linux.zip`  
+Windows -> `USBSID-Pico-Configtool-0.1.0-windows.msi`  
+MacOs Apple silicon -> `USBSID-Pico-Configtool-0.1.0-macos-aarch64.dmg`
+MacOs Intel -> `USBSID-Pico-Configtool-0.1.0-macos-x86_64.dmg`  
 
+Java JAR file without driver and javafx:  
+All platforms (Java JAR) -> `usbsid-configtool-0.1.0.jar` + `run.sh` or `run.bat`
 
 ## Options
+- Pre defined socket configurations
+- Manual socket configuration
+- Socket Chip/SID auto detect
+- Clock configuration
+- LED configuration
+- PCB related feature configuration
+- Save your favorite configs to an INI file
+- Import your favorite configs back in and write them to USBSID-Pico
+  * Fully compatible with `cfg_usbsid` INI files
 
-None what so ever!
+## In development
+- Clone chip configuration screens for SIDEMU, FPGASID, SKPICO, PDSID, ARMSID, etc!
+- Send SID files to the onboard SID player (Pico2 only!)
+- Local player, maybe!?
+- Any requests?
 
-
-## Examples
-
-Nope, note yet!
-
+## Screenshots
+![About screen](images/screenshot-linux.png)
 
 ### Bugs
-
-Many, probably!
-
+- MacOs not working yet, working on it!
+- Many, probably! Please report any via the issues page!
 
 ## Fonts
-
 Font used is `C64 TrueType v1.2.1/Style` by [style64](https://style64.org/c64-truetype)  
 The font is implemented according to their [license statement](https://style64.org/c64-truetype/license)
 
 ## License
-
 Copyright © 2026 LouD
 
 Distributed under the [Eclipse Public License 2.0](https://www.eclipse.org/legal/epl-2.0)
