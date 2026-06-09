@@ -11,7 +11,7 @@ To communicate with USBSID-Pico it uses the [Java driver](https://github.com/Lou
 The driver runs on top of [javax.usb](https://javax-usb.sourceforge.net/) or [usb4java](https://github.com/usb4java/usb4java) depending on the platform you are on!  
 
 ## Requirements
-Due to breaking changes in the way the socket values are displayed a minimal USBSID-Pico firmware version is `0.6.4-BETA`, advised is `0.7.0-BETA`.  
+Due to breaking changes in the way the socket values are displayed the minimum USBSID-Pico firmware version is `0.6.4-BETA`, advised is `0.7.0-BETA`.  
 These changes are visual only for pcb v1.3 and lower, but required for pcb v1.4 and higher due to voltage configuration.  
 
 ## Installation
