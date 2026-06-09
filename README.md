@@ -2,7 +2,7 @@
 # USBSID-Pico Configtool
 
 This repo contains the graphical configuration tool for USBSID-Pico.  
-It exists as supplement and next to the [command line config](https://github.com/LouDnl/USBSID-Pico/tree/master/examples/config-tool) tool and [web configtool](https://usbsid.loudai.nl).
+It exists as supplement and next to the [command line config](https://github.com/LouDnl/USBSID-Pico/tree/master/examples/config-tool) tool and [web configtool](https://usbsid.loudai.nl).  
 
 
 The Configtool is written in [Clojure](https://www.clojure.org) which is a lisp that runs on top of Java. It's really neat, go check it out!  
@@ -12,7 +12,7 @@ The driver runs on top of [javax.usb](https://javax-usb.sourceforge.net/) or [us
 
 ## Requirements
 Due to breaking changes in the way the socket values are displayed a minimal USBSID-Pico firmware version is `0.6.4-BETA`, advised is `0.7.0-BETA`.  
-These changes are visual only for pcb v1.3 and lower, but required for pcb v1.4 and higher due to voltage configuration.
+These changes are visual only for pcb v1.3 and lower, but required for pcb v1.4 and higher due to voltage configuration.  
 
 ## Installation
 Download from https://github.com/LouD/USBSID-Pico-Configtool/releases
@@ -22,11 +22,11 @@ All including (driver/javafx) formats:
 Linux -> `USBSID-Pico-Configtool-0.1.0-x86_64.AppImage`  
 Linux -> `USBSID-Pico-Configtool-0.1.0-linux.zip`  
 Windows -> `USBSID-Pico-Configtool-0.1.0-windows.msi`  
-MacOs Apple silicon -> `USBSID-Pico-Configtool-0.1.0-macos-aarch64.dmg`
+MacOs Apple silicon -> `USBSID-Pico-Configtool-0.1.0-macos-aarch64.dmg`  
 MacOs Intel -> `USBSID-Pico-Configtool-0.1.0-macos-x86_64.dmg`  
 
 Java JAR file without driver and javafx:  
-All platforms (Java JAR) -> `usbsid-configtool-0.1.0.jar` + `run.sh` or `run.bat`
+All platforms (Java JAR) -> `usbsid-configtool-0.1.0.jar` + `run.sh` or `run.bat` 
 
 ## Options
 - Pre defined socket configurations
@@ -54,9 +54,9 @@ All platforms (Java JAR) -> `usbsid-configtool-0.1.0.jar` + `run.sh` or `run.bat
 
 ## Fonts
 Font used is `C64 TrueType v1.2.1/Style` by [style64](https://style64.org/c64-truetype)  
-The font is implemented according to their [license statement](https://style64.org/c64-truetype/license)
+The font is implemented according to their [license statement](https://style64.org/c64-truetype/license)  
 
 ## License
-Copyright © 2026 LouD
-
+Copyright © 2026 LouD  
+  
 Distributed under the [Eclipse Public License 2.0](https://www.eclipse.org/legal/epl-2.0)
