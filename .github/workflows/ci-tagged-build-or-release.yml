@@ -166,13 +166,13 @@ jobs:
         shell: bash
         run: ./scripts/install-libusb4java.sh
 
-      # upload-artifact@v4 strips the common path prefix (target/) from the artifact,
-      # so download explicitly into target/ to restore the expected location.
-      - name: Download JAR from CI
-        uses: actions/download-artifact@v4
-        with:
-          name: jar-and-launchers
-          path: target
+      # Build uber LOCALLY on each platform runner so build.clj's host-jfx-alias
+      # picks the matching mac classifier ($mac or $mac-aarch64) per host arch.
+      # Using the shared Ubuntu-built uber from the `ci` job would never pull in
+      # mac dylibs → JavaFX prism libs missing from .app → "no suitable pipeline".
+      - name: Build uber locally (per-platform JavaFX classifier)
+        shell: bash
+        run: clojure -T:build uber
 
       - name: Build platform package
         shell: bash
