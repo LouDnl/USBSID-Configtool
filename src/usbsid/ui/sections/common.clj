@@ -25,7 +25,7 @@
    :children
    [{:fx/type     :label
      :text        "(i) Most config items (tabs on the left) are enabled by default"
-     :style-class ["c64-label" "c64-warning-text" " c64-text-wrap"]}
+     :style-class ["c64-label" "c64-warning-text" "c64-text-wrap"]}
     {:fx/type     :label
      :text        "This way you can create your preferred config and save it as ini and reload and apply it at a later time."
      :style-class ["c64-label" "c64-text-wrap"]}]})
@@ -50,7 +50,7 @@
 
     {:fx/type     :label
      :text        "USBSID-Pico is a Raspberry Pi Pico / Pico 2 based board for interfacing"
-     :style-class ["c64-label" "c64-text`-wrap"]}
+     :style-class ["c64-label" "c64-text-wrap"]}
     {:fx/type     :label
      :text        "one or two MOS SID chips and/or hardware SID emulators over USB with your computer."
      :style-class ["c64-label" "c64-text-wrap"]}]})
