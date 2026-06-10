@@ -6,6 +6,7 @@
    [usbsid.state :as state]
    [usbsid.config-model :as model])
   (:import
+   [java.util.logging Level]
    [usbsid USBSID USBSIDDevice Config$Cfg Config$CLK Cmd]))
 
 
@@ -151,14 +152,16 @@
 ;;; Internal driver API
 
 (defn- with-driver
-  "Exception catch wrapper around driver functions"
+  "Throwable catch wrapper around driver functions.
+   Catches Error (e.g. UnsatisfiedLinkError on macOS hardened-runtime dylib load fails)
+   so the future doesn't die silently."
   [label f]
   (future
     (try
       (f)
-      (catch Exception e
-        (.error @logging/logger e)
-        (state/log! (str label " error: " (.getMessage e)))))))
+      (catch Throwable t
+        (.log @logging/logger Level/SEVERE (str label " error") t)
+        (state/log! (str label " error: " (.getName (class t)) " - " (.getMessage t)))))))
 
 (defn- valid-fw-version?
   "FW version looks like '0.6.0-BETA.20250101', starts with 'digit', length > 3."
