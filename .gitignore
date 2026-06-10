@@ -38,6 +38,7 @@
 !assets/lib/libusb4java-1.3.0-win32-x86.jar.sha1
 !images/screenshot-linux.png
 !resources/logging.properties
+!resources/mac-entitlements.plist
 !resources/usbsid-configtool-icon.png
 !resources/usbsid-configtool-icon.icns
 !resources/usbsid-configtool-icon.ico
