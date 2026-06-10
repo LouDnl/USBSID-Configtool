@@ -54,13 +54,35 @@
 (def jpackage-opts
   (into jfx-opts java-opts))
 
-; test
+; Platform / arch detection for selecting matching JavaFX classifier alias.
+; macOS uberjar would otherwise pack BOTH $mac and $mac-aarch64 dylibs at
+; identical JAR-root paths → uber merge drops one → arch mismatch at runtime.
+
+(defn- host-jfx-alias
+  "Returns deps.edn alias keyword for the host's mac classifier, or nil on non-mac."
+  []
+  (let [os   (string/lower-case (System/getProperty "os.name"))
+        arch (string/lower-case (System/getProperty "os.arch"))]
+    (when (string/includes? os "mac")
+      (if (or (= arch "aarch64") (= arch "arm64"))
+        :jfx-mac-arm
+        :jfx-mac-x64))))
+
+(defn- with-jfx-aliases
+  "Appends host JavaFX alias (if any) to the supplied alias vec."
+  [aliases]
+  (if-let [a (host-jfx-alias)]
+    (conj (vec aliases) a)
+    (vec aliases)))
+
+
+;;; unittests
 
 (defn test
   "Run all tests via cognitect test-runner."
   [opts]
   (ensure-driver!)
-  (let [basis    (b/create-basis {:aliases [:test]})
+  (let [basis    (b/create-basis {:aliases (with-jfx-aliases [:test])})
         cmds     (b/java-command
                   {:basis     basis
                    :main      'clojure.main
@@ -69,14 +91,17 @@
     (when-not (zero? exit) (throw (ex-info "Tests failed" {}))))
   opts)
 
-; uber
+
+;;; uberjar
 
 (defn uber
-  "Build a self-contained fat JAR including all deps + JavaFX platform JARs."
+  "Build a self-contained fat JAR including all deps + JavaFX platform JARs.
+   On macOS hosts, picks exactly one mac classifier ($mac or $mac-aarch64) via
+   `host-jfx-alias` to avoid the libprism_*.dylib collision."
   [opts]
   (ensure-driver!)
   (b/delete {:path "target"})
-  (let [basis (b/create-basis {})]
+  (let [basis (b/create-basis {:aliases (with-jfx-aliases [])})]
     (println "\nCopying sources and resources...")
     (b/copy-dir {:src-dirs ["src" "resources"] :target-dir class-dir})
     (println (str "\nCompiling " main "..."))
@@ -102,7 +127,8 @@
                   " MB)")))
   opts)
 
-; launcher scripts
+
+;;; launcher scripts
 
 (defn- write-launchers []
   (let [jar   (str (name lib) "-" version ".jar")
@@ -117,7 +143,8 @@
     (.setExecutable (File. "target/run.sh") true)
     (println "  Wrote target/run.sh and target/run.bat")))
 
-; jpackage
+
+;;; jpackage
 
 (defn- detect-pkg-type []
   (let [os (string/lower-case (System/getProperty "os.name"))]
@@ -126,19 +153,6 @@
       (string/includes? os "windows") "msi"
       (string/includes? os "mac")     "dmg"
       :else                           "app-image")))
-
-; ISSUE:
-
-;; WARNING: A restricted method in java.lang.System has been called
-;; WARNING: java.lang.System::load has been called by com.sun.glass.utils.NativeLibLoader in an unnamed module (file:/mnt/loud/Code/Development/pi/USBSID-Pico-dev/configtool-repo/target/package/USBSID-Pico-Configtool/lib/app/usbsid-configtool-0.1.0.jar)
-;; WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
-;; WARNING: Restricted methods will be blocked in a future release unless native access is enabled
-
-;; WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
-;; WARNING: sun.misc.Unsafe::allocateMemory has been called by com.sun.marlin.OffHeapArray (file:/mnt/loud/Code/Development/pi/USBSID-Pico-dev/configtool-repo/target/package/USBSID-Pico-Configtool/lib/app/usbsid-configtool-0.1.0.jar)
-;; WARNING: Please consider reporting this to the maintainers of class com.sun.marlin.OffHeapArray
-;; WARNING: sun.misc.Unsafe::allocateMemory will be removed in a future release
-
 
 (defn package
   "Create a platform-native package using jpackage.
