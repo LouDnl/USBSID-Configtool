@@ -24,7 +24,8 @@
    :config         (:config s)
    :active-section (:active-section s)
    :log            (:log s)
-   :dirty          (:dirty s)})
+   :dirty          (:dirty s)
+   :hover-popup    (:hover-popup s)})
 
 (def renderer (atom nil))
 

@@ -223,6 +223,20 @@
                              :-fx-text-fill        "#000000"
                              :-fx-border-color     "#8888FF"}}
 
+    ".c64-button-warning"
+    {:-fx-background-color  "#4D3F96"
+     :-fx-border-color      "#ccb344"
+     :-fx-border-width      "1px"
+     :-fx-text-fill         "#ccb344"
+     :-fx-font-family       "\"C64 Pro Mono\""
+     :-fx-font-size         "13px"
+     :-fx-padding           "4px 12px"
+     :-fx-cursor            "hand"
+     :-fx-background-radius "0"
+     :-fx-border-radius     "0"
+     ":hover"               {:-fx-background-color "#ccb344"
+                             :-fx-text-fill        "#FFFFFF"}}
+
     ".c64-button-danger"
     {:-fx-background-color  "#4D3F96"
      :-fx-border-color      "#CC4444"
@@ -462,6 +476,16 @@
     ; Cursor
     ".c64-cursor"
     {:-fx-text-fill "#FFFFFF"}
+
+    ; Hover popup
+    ".c64-popup"
+    {:-fx-background-color "#5047A0"
+     :-fx-border-color     "#8888FF"
+     :-fx-border-width     "1px"
+     :-fx-text-fill        "#B8B8FF"
+     :-fx-font-family      "\"C64 Pro Mono\""
+     :-fx-font-size        "13px"
+     :-fx-padding          "10px"}
 
     ; Text
     ".c64-text-middle"

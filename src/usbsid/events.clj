@@ -51,6 +51,15 @@
 (defmethod handle :save-noreset [_]
   (driver/save-config!))
 
+(defmethod handle :apply-save-config [_]
+  (do
+    (driver/write-config!)
+    (Thread/sleep 500) ; Sleep a while, stay forever?
+    (driver/save-config!)
+    (driver/apply-config!)
+    (Thread/sleep 500) ; Sleep a while, stay forever?
+    (driver/read-config!)))
+
 (defmethod handle :reload-flash [_]
   (driver/reload-config!))
 
@@ -86,6 +95,16 @@
 
 (defmethod handle :bootloader [_]
   (driver/bootloader!))
+
+(defmethod handle :popup-show [{:keys [key]}]
+  (swap! state/*state assoc :hover-popup key))
+
+(defmethod handle :popup-hide [{:keys [key]}]
+  (swap! state/*state
+         (fn [s]
+           (if (= (:hover-popup s) key)
+             (assoc s :hover-popup nil)
+             s))))
 
 (defmethod handle :open-url [{:keys [url]}]
   (let [desktop (java.awt.Desktop/getDesktop)]

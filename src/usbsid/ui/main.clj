@@ -6,6 +6,7 @@
    [clojure.string :as string]
    [usbsid.state :refer [log!]]
    [usbsid.ui.css :as css]
+   [usbsid.ui.sections.common :as common]
    [usbsid.ui.sections.sockets :as s-sockets]
    [usbsid.ui.sections.clock :as s-clock]
    [usbsid.ui.sections.leds :as s-leds]
@@ -187,7 +188,7 @@
      :sockets   (s-sockets/sockets-section {:config config})
      :clock     (s-clock/clock-section {:config config})
      :leds      (s-leds/leds-section {:config config})
-     :features  (s-features/features-section {:config config})
+     :features  (s-features/features-section {:config config :connection connection})
      :sid-tests (s-tests/sid-tests-section {:connected? connected?})
      :debug     (s-debug/debug-section {:connected? connected?})
      :about     (s-about/about-section {:connection connection})
@@ -197,7 +198,7 @@
 
 (defn action-bar
   "Are you getting any!?"
-  [{:keys [connected?]}]
+  [{:keys [connected? hover-popup]}]
   {:fx/type :v-box
    :spacing 0
    :padding {:top    3
@@ -213,44 +214,24 @@
                    :left   8}
      :spacing     6
      :children
-     [{:fx/type     :button
-       :text        "READ CONFIG"
-       :on-action   {:event/type :read-config}
-       :disable     (not connected?)
-       :wrap-text   true
-       :style-class "c64-button"}
-      {:fx/type     :button
-       :text        "WRITE CONFIG"
-       :on-action   {:event/type :write-config}
-       :disable     (not connected?)
-       :wrap-text   true
-       :style-class "c64-button"}
-      {:fx/type     :button
-       :text        "APPLY CFG"
-       :on-action   {:event/type :apply-config}
-       :disable     (not connected?)
-       :wrap-text   true
-       :style-class "c64-button"}
+     [(common/buttons :read {:hover-popup hover-popup
+                             :connected?  connected?})
+      (common/buttons :write {:hover-popup hover-popup
+                              :connected?  connected?})
+      (common/buttons :apply {:hover-popup hover-popup
+                              :connected?  connected?})
       {:fx/type     :pane
        :h-box/hgrow :always}
-      {:fx/type     :button
-       :text        "SAVE (NO REBOOT)"
-       :on-action   {:event/type :save-noreset}
-       :disable     (not connected?)
-       :wrap-text   true
-       :style-class "c64-button"}
-      {:fx/type     :button
-       :text        "SAVE + REBOOT"
-       :on-action   {:event/type :save-config}
-       :disable     (not connected?)
-       :wrap-text   true
-       :style-class "c64-button-primary"}
-      {:fx/type     :button
-       :text        "RELOAD FLASH"
-       :on-action   {:event/type :reload-flash}
-       :disable     (not connected?)
-       :wrap-text   true
-       :style-class "c64-button"}]}
+      (common/buttons :yolo {:hover-popup hover-popup
+                             :connected?  connected?})
+      {:fx/type     :pane
+       :h-box/hgrow :always}
+      (common/buttons :save {:hover-popup hover-popup
+                             :connected?  connected?})
+      (common/buttons :save-reboot {:hover-popup hover-popup
+                                    :connected?  connected?})
+      (common/buttons :reload-flash {:hover-popup hover-popup
+                                     :connected?  connected?})]}
     {:fx/type     :h-box
      :style-class "c64-hbox"
      :padding     {:top    2
@@ -259,21 +240,12 @@
                    :left   8}
      :spacing     6
      :children
-     [{:fx/type     :button
-       :text        "SAVE INI"
-       :on-action   {:event/type :export-ini}
-       :style-class "c64-button"}
-      {:fx/type     :button
-       :text        "LOAD INI"
-       :on-action   {:event/type :import-ini}
-       :style-class "c64-button"}
+     [(common/buttons :save-ini {:hover-popup hover-popup})
+      (common/buttons :load-ini {:hover-popup hover-popup})
       {:fx/type     :pane
        :h-box/hgrow :always}
-      {:fx/type     :button
-       :text        "RESET DEFAULTS"
-       :on-action   {:event/type :reset-config}
-       :disable     (not connected?)
-       :style-class "c64-button-danger"}]}]})
+      (common/buttons :reset-dflts {:hover-popup hover-popup
+                                    :connected? connected?})]}]})
 
 (defn- log-text-area
   "Here be letters!"
@@ -312,7 +284,7 @@
 
 (defn root-view
   "In your face!"
-  [{:keys [connection config active-section log]
+  [{:keys [connection config active-section log hover-popup]
     :as _state}]
   (let [connected?    (= :connected (:status connection))
         need-confirm? (get config :need-confirmation false)]
@@ -359,5 +331,6 @@
        :bottom
        {:fx/type  :v-box
         :spacing  0
-        :children [(action-bar {:connected? connected?})
+        :children [(action-bar {:connected?  connected?
+                                :hover-popup hover-popup})
                    (log-panel {:log log})]}}}}))

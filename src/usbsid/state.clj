@@ -17,7 +17,8 @@
    :log            [(format
                      "USBSID-Pico Config Tool v%s"
                      (trim-newline (slurp (io/resource ".version"))))]
-   :dirty          false})
+   :dirty          false
+   :hover-popup    nil})
 
 (def *state (atom initial-state))
 

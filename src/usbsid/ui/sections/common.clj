@@ -1,6 +1,7 @@
 (ns usbsid.ui.sections.common
   "Don't want to have too much boilerplate"
   (:require
+   [usbsid.ui.mouse-events :as me]
    [usbsid.ui.widgets :as w]))
 
 
@@ -34,13 +35,16 @@
   {:fx/type :v-box
    :children
    [{:fx/type     :label
-     :text        "(!) Any config setting change must be applied before taking effect."
+     :text        "(!) Any config setting change must be written and applied before taking effect."
      :style-class ["c64-label" "c64-error-text" "c64-text-wrap"]}
     {:fx/type     :label
-     :text        "You can change multiple config items before applying."
+     :text        "You can change multiple config items before writing, applying and saving. This way you can test before actually saving."
      :style-class ["c64-label" "c64-text-wrap"]}
     {:fx/type     :label
-     :text        "Click APPLY CFG, SAVE (NO REBOOT) or SAVE + REBOOT."
+     :text        "Writing, applying and saving are separate processes in the firmware."
+     :style-class ["c64-label" "c64-text-wrap"]}
+    {:fx/type     :label
+     :text        "Hover the buttons below with your mouse to see the exact function of them"
      :style-class ["c64-label" "c64-text-wrap"]}]})
 
 (def about-text-block
@@ -92,10 +96,10 @@
      :style-class "c64-label"}
     {:fx/type     :label
      :text        "v1.5+       : Automatic voltage configuration"
-     :style-class "c64-label" }
+     :style-class "c64-label"}
     {:fx/type     :label
      :text        "              with socket change detection + confirmation."
-     :style-class "c64-label" }]})
+     :style-class "c64-label"}]})
 
 (def links-text-block
   {:fx/type :v-box
@@ -113,3 +117,109 @@
        :text        "FIRMWARE RELEASES"
        :on-action   {:event/type :open-url :url release-url}
        :style-class "c64-button"}]}]})
+
+(defmacro popup
+  [hover-popup hover-key hover-text hover-item]
+  `(me/popup
+    {:hover-popup ~hover-popup
+     :popup-key   ~hover-key
+     :popup-text  ~hover-text
+     :button      ~hover-item}))
+
+(defn buttons
+  [button & {:keys [connected? hover-popup]}]
+  (button
+   {:read         (popup
+                   hover-popup
+                   button
+                   "READ CONFIG:\nread the active configuration from USBSID-Pico memory into the configtool"
+                   {:fx/type     :button
+                    :text        "READ"
+                    :on-action   {:event/type :read-config}
+                    :disable     (not connected?)
+                    :wrap-text   true
+                    :style-class "c64-button"})
+    :write        (popup
+                   hover-popup
+                   button
+                   "WRITE CONFIG:\nwrite the configuration from the configtool to USBSID-Pico memory. Not all configuration items will be active until an apply is done."
+                   {:fx/type     :button
+                    :text        "WRITE"
+                    :on-action   {:event/type :write-config}
+                    :disable     (not connected?)
+                    :wrap-text   true
+                    :style-class "c64-button"})
+    :apply        (popup
+                   hover-popup
+                   button
+                   "APPLY CONFIG:\napply the configuration present in USBSID-Pico memory for direct use"
+                   {:fx/type     :button
+                    :text        "APPLY"
+                    :on-action   {:event/type :apply-config}
+                    :disable     (not connected?)
+                    :wrap-text   true
+                    :style-class "c64-button"})
+    :yolo         (popup
+                   hover-popup
+                   button
+                   "WRITE, APPLY, SAVE & READ CONFIG:\n(+/- 1 second freeze) this button is a combination of write, apply, save and read."
+                   {:fx/type     :button
+                    :text        "YOLO"
+                    :on-action   {:event/type :apply-save-config}
+                    :disable     (not connected?)
+                    :wrap-text   true
+                    :style-class "c64-button-warning"})
+    :save         (popup
+                   hover-popup
+                   button
+                   "SAVE CONFIG:\nsave the active configuration in USBSID-Pico memory to it's flash storage. This way the configuration becomes active automatically after a power cycle."
+                   {:fx/type     :button
+                    :text        "SAVE"
+                    :on-action   {:event/type :save-noreset}
+                    :disable     (not connected?)
+                    :wrap-text   true
+                    :style-class "c64-button"})
+    :save-reboot  (popup
+                   hover-popup
+                   button
+                   "SAVE CONFIG & REBOOT:\nsave the active configuration in USBSID-Pico memory to it's flash storage and reboot/power cycle after saving."
+                   {:fx/type     :button
+                    :text        "+REBOOT"
+                    :on-action   {:event/type :save-config}
+                    :disable     (not connected?)
+                    :wrap-text   true
+                    :style-class "c64-button-primary"})
+    :reload-flash (popup
+                   hover-popup
+                   button
+                   "RELOAD FROM FLASH:\nReload the latest configuration from USBSID-Pico flash and apply it for direct use"
+                   {:fx/type     :button
+                    :text        "RELOAD"
+                    :on-action   {:event/type :reload-flash}
+                    :disable     (not connected?)
+                    :wrap-text   true
+                    :style-class "c64-button-danger"})
+    :save-ini     (popup
+                   hover-popup
+                   button
+                   "SAVE INI:\nwrite the current configuration to an .ini file on disk so it can be reloaded later."
+                   {:text        "SAVE INI"
+                    :on-action   {:event/type :export-ini}
+                    :style-class "c64-button"})
+
+    :load-ini     (popup
+                   hover-popup
+                   button
+                   "LOAD INI:\nload a previously saved .ini configuration into the tool (does not write to the board yet)."
+                   {:text        "LOAD INI"
+                    :on-action   {:event/type :import-ini}
+                    :style-class "c64-button"})
+    :reset-dflts  (popup
+                   hover-popup
+                   button
+                   "RESET DEFAULTS:\nReset the USBSID-Pico configuration to default settings and reboot/power cycle"
+                   {:fx/type     :button
+                    :text        "RESET DEFAULTS"
+                    :on-action   {:event/type :reset-config}
+                    :disable     (not connected?)
+                    :style-class "c64-button-danger"})}))

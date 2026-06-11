@@ -1,14 +1,19 @@
 (ns usbsid.ui.sections.features
   "Who are you featuring today?"
   (:require
+   [clojure.string :refer [join split]]
    [usbsid.ui.widgets :as w]))
 
 
 ;;; Features, not futures!
 
+(defn parse-pcb-version
+  [pcbver]
+  (Long/parseLong (join "" (split pcbver #"\."))))
+
 (defn features-section
   "I see, I see what you can't see"
-  [{:keys [config]}]
+  [{:keys [config connection]}]
   {:fx/type     :v-box
    :style-class "c64-vbox"
    :spacing     8
@@ -100,6 +105,10 @@
      [{:fx/type     :v-box
        :style-class "c64-section"
        :spacing     6
+       :disable    (or (= (:status connection) :disconnected)
+                       (and
+                        (= (:status connection) :connected)
+                        (< (parse-pcb-version (:pcb-version connection)) 13)))
        :children
        [(w/c64-row "Stereo Mode"
                    {:fx/type     :toggle-button
@@ -130,6 +139,10 @@
      [{:fx/type     :v-box
        :style-class "c64-section"
        :spacing     6
+       :disable    (or (= (:status connection) :disconnected)
+                       (and
+                        (= (:status connection) :connected)
+                        (< (parse-pcb-version (:pcb-version connection)) 15)))
        :children
        [(w/c64-row "Disable Socket Change Detect"
                    {:fx/type     :toggle-button
