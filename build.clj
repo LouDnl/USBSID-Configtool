@@ -154,11 +154,46 @@
       (string/includes? os "mac")     "dmg"
       :else                           "app-image")))
 
+(defn- jpackage!
+  "Invoke jpackage with the given arg vector. Throws on non-zero exit."
+  [args]
+  (let [{:keys [exit]} (b/process {:command-args args})]
+    (when-not (zero? exit)
+      (throw (ex-info "jpackage failed" {:exit exit :args args})))))
+
+(defn- codesign-app!
+  "Ad-hoc deep-sign the .app with hardened runtime + entitlements.
+
+  jpackage's default ad-hoc signature only covers the launcher binary; the
+  embedded JVM libraries and runtime-extracted JNI dylibs (libusb4java) stay
+  unsigned. On Apple Silicon macOS 14+, entitlements (`device.usb`,
+  `disable-library-validation`) bind only when the *whole* bundle carries a
+  consistent signature, so an unsigned libusb4java.dylib leaves `libusb_open`
+  blocked by TCC with no error - the connect call hangs forever.
+
+  `--sign -` ad-hoc identity is enough to make the entitlements bind; proper
+  Developer ID signing is still the long-term answer for distribution +
+  notarization, but ad-hoc unblocks local + community Apple Silicon use today."
+  [app-path entitlements]
+  (println (str "Deep-signing " app-path " (ad-hoc, with entitlements)"))
+  (let [{:keys [exit]}
+        (b/process
+         {:command-args ["codesign"
+                         "--force"
+                         "--deep"
+                         "--options"       "runtime"
+                         "--entitlements"  entitlements
+                         "--sign"          "-"
+                         app-path]})]
+    (when-not (zero? exit)
+      (throw (ex-info "codesign failed" {:exit exit :app app-path})))))
+
 (defn package
   "Create a platform-native package using jpackage.
   On Linux: app-image (self-contained directory).
   On Windows: msi installer (requires WiX toolset), per-user install scope.
-  On macOS: dmg image.
+  On macOS: app-image → ad-hoc deep codesign → dmg (two-step so the
+  resigned .app is what lands in the dmg).
   NOTE: cross-compilation not supported - run on each target platform."
   [opts]
   (when-not (.exists (File. uber-file))
@@ -181,7 +216,6 @@
     (.mkdirs (File. input-dir))
     (.mkdirs (File. dest))
     (b/copy-file {:src uber-file :target (str input-dir "/" jar-name)})
-    (println (str "\nPackaging as " pkg-type " -> " dest "/..."))
     (let [os           (string/lower-case (System/getProperty "os.name"))
           win?         (string/includes? os "windows")
           mac?         (string/includes? os "mac")
@@ -195,34 +229,51 @@
           ; library validation so the JNI native loads. Without these the app hangs at
           ; UsbHostManager.getUsbServices() with a silent UnsatisfiedLinkError.
           entitlements "resources/mac-entitlements.plist"
-          {:keys [exit]}
-          (b/process
-           {:command-args
-            (cond-> (into
-                     ["jpackage"
-                      "--type"           pkg-type
-                      "--name"           app-name
-                      "--app-version"    ver
-                      "--input"          input-dir
-                      "--main-jar"       jar-name
-                      "--main-class"     "usbsid.core"
-                      "--dest"           dest
-                      "--vendor"         "LouD"
-                      "--description"    "USBSID-Pico Configuration Tool"
-                      "--copyright"      "Copyright 2024-2026 LouD, GPLv2"]
-                     (mapcat #(vector "--java-options" %) jpackage-opts))
-              (and icon (.exists (File. ^String icon))) (into ["--icon" icon])
-              (and mac? (.exists (File. ^String entitlements)))
-              (into ["--mac-entitlements" entitlements])
-              win? (into ["--win-menu"
-                          "--win-menu-group"    "USBSID-Pico"
-                          "--win-shortcut"
-                          "--win-dir-chooser"
-                          "--win-per-user-install"
-                          "--win-upgrade-uuid"  "b2e8c4f1-3a5d-4e6b-9c7d-0f1e2a3b4c5d"]))})]
-      (if (zero? exit)
-        (println (str "Package created in " dest "/"))
-        (throw (ex-info "jpackage failed" {:exit exit})))))
+          common-args  (cond-> (into
+                                ["--name"           app-name
+                                 "--app-version"    ver
+                                 "--input"          input-dir
+                                 "--main-jar"       jar-name
+                                 "--main-class"     "usbsid.core"
+                                 "--vendor"         "LouD"
+                                 "--description"    "USBSID-Pico Configuration Tool"
+                                 "--copyright"      "Copyright 2024-2026 LouD, GPLv2"]
+                                (mapcat #(vector "--java-options" %) jpackage-opts))
+                         (and icon (.exists (File. ^String icon))) (into ["--icon" icon])
+                         (and mac? (.exists (File. ^String entitlements)))
+                         (into ["--mac-entitlements" entitlements])
+                         win? (into ["--win-menu"
+                                     "--win-menu-group"    "USBSID-Pico"
+                                     "--win-shortcut"
+                                     "--win-dir-chooser"
+                                     "--win-per-user-install"
+                                     "--win-upgrade-uuid"  "b2e8c4f1-3a5d-4e6b-9c7d-0f1e2a3b4c5d"]))]
+      (if mac?
+        ; Two-step macOS flow: app-image → deep codesign → dmg wrapping the resigned app.
+        (let [app-dir  (str dest "/app-image")
+              app-path (str app-dir "/" app-name ".app")]
+          (.mkdirs (File. app-dir))
+          (println (str "\nBuilding macOS app-image -> " app-dir "/..."))
+          (jpackage! (into ["jpackage" "--type" "app-image" "--dest" app-dir] common-args))
+          (when (and (.exists (File. ^String entitlements))
+                     (.exists (File. ^String app-path)))
+            (codesign-app! app-path entitlements))
+          (println (str "\nWrapping signed app into dmg -> " dest "/..."))
+          (jpackage! ["jpackage"
+                      "--type"          "dmg"
+                      "--app-image"     app-path
+                      "--name"          app-name
+                      "--app-version"   ver
+                      "--dest"          dest
+                      "--vendor"        "LouD"
+                      "--description"   "USBSID-Pico Configuration Tool"
+                      "--copyright"     "Copyright 2024-2026 LouD, GPLv2"])
+          (println (str "Package created in " dest "/")))
+        ; Non-mac: single jpackage call as before.
+        (do
+          (println (str "\nPackaging as " pkg-type " -> " dest "/..."))
+          (jpackage! (into ["jpackage" "--type" pkg-type "--dest" dest] common-args))
+          (println (str "Package created in " dest "/"))))))
   opts)
 
 ; ci

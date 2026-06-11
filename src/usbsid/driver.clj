@@ -261,13 +261,13 @@
     (fn []
       (reset! drv-atom (USBSID.))
       (state/log! "Connecting to USBSID-Pico")
-      (let [result (if (USBSIDDevice/isWinblows)
-                     (do
-                       (USBSIDDevice/setdriver_USBSID "libusb-winusb")
-                       (.USBSID_init @drv-atom))
-                     (do
-                       (USBSIDDevice/setdriver_USBSID "usbx")
-                       (.USBSID_init @drv-atom)))]
+      (let [backend (if (USBSIDDevice/isWinblows) "libusb-winusb" "usbx")
+            _       (USBSIDDevice/setdriver_USBSID backend)
+            _       (state/log! (str "Backend set: " backend " - calling USBSID_init"))
+            t0      (System/currentTimeMillis)
+            result  (.USBSID_init @drv-atom)
+            elapsed (- (System/currentTimeMillis) t0)
+            _       (state/log! (format "USBSID_init returned %d in %dms" result elapsed))]
         (if (zero? result)
           (let [fw  (read-with-retry #(do-read-fwversion) valid-fw-version? 3 50)
                 pcb (read-with-retry #(do-read-pcbversion) valid-pcb-version? 3 50)]
