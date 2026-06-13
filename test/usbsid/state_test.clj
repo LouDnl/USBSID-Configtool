@@ -89,9 +89,8 @@
     (is (= :legacy (state/fw-version->line "0.6.4-BETA.20250101"))))
   (testing "v0.7+ firmware -> :v0_7"
     (is (= :v0_7 (state/fw-version->line "0.7.0-20260609"))))
-  (testing "unclassified major/minor pair -> :unknown"
-    ;; v1.0.0 isn't matched: cond requires (and (>= M 1) (>= m 7)).
-    (is (= :unknown (state/fw-version->line "v1.0.0"))))
+  (testing "v1.0+ firmware -> :v0_7"
+    (is (= :v0_7 (state/fw-version->line "v1.0.0"))))
   (testing "unparseable -> :unknown"
     (is (= :unknown (state/fw-version->line nil)))
     (is (= :unknown (state/fw-version->line "")))
