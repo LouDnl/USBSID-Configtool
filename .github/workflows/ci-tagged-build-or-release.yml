@@ -6,16 +6,6 @@ on:
     tags:
       - 'd[0-9a-z]+'        # e.g. d20260601    - tagged build
       - 'v(\d|\.|-|[A-Z])+' # e.g. v0.1.0-ALPHA - versioned release
-    paths:
-      - ".github/workflows/**"
-      - "assets/driver/**"
-      - "assets/lib/**"
-      - "resources/**"
-      - "scripts/**"
-      - "src/usbsid/**"
-      - "test/usbsid/**"
-      - "build.clj"
-      - "deps.edn"
   pull_request:
   workflow_dispatch:
 
