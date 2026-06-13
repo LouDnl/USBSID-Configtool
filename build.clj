@@ -278,6 +278,12 @@
 
 ; ci
 
+(defn tests
+  "Run the unittests only"
+  [opts]
+  (test opts)
+  opts)
+
 (defn ci
   "Run full CI pipeline: tests + uberjar + launcher scripts."
   [opts]
