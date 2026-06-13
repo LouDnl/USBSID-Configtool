@@ -28,6 +28,7 @@
   {:connection     {:status        :disconnected
                     :fw-version    nil
                     :pcb-version   nil
+                    :fw-line       :unknown
                     :config-status :none}
    :config         model/initial-config
    :active-section :welcome
