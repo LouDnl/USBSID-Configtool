@@ -13,7 +13,7 @@
    [usbsid.ui.sections.features :as s-features]
    [usbsid.ui.sections.sid-tests :as s-tests]
    [usbsid.ui.sections.debug :as s-debug]
-   [usbsid.ui.sections.about :as s-about]
+   [usbsid.ui.sections.welcome :as s-welcome]
    [usbsid.window-prefs :as w-prefs])
   (:import
    [javafx.application Platform]
@@ -30,7 +30,7 @@
 ;;; Here be stuffs
 
 (def nav-items
-  [{:key :about     :label "ABOUT"}
+  [{:key :welcome   :label "WELCOME"}
    {:key :sockets   :label "SOCKETS"}
    {:key :clock     :label "CLOCK"}
    {:key :leds      :label "LEDS"}
@@ -191,7 +191,7 @@
      :features  (s-features/features-section {:config config :connection connection})
      :sid-tests (s-tests/sid-tests-section {:connected? connected?})
      :debug     (s-debug/debug-section {:connected? connected?})
-     :about     (s-about/about-section {:connection connection})
+     :welcome   (s-welcome/about-section {:connection connection})
      {:fx/type     :label
       :text        "Select a section"
       :style-class "c64-label"})})
