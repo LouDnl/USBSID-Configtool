@@ -143,3 +143,9 @@
                     (assoc :config new-cfg :dirty true)
                     (assoc-in [:connection :config-status] :importini)))
         (state/log! (str "Config imported from " (.getName file)))))))
+
+(defn config-changed!
+  [path value]
+  (handle {:event/type :config-changed
+           :path path
+           :value value}))
