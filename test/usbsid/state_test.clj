@@ -19,7 +19,7 @@
       (is (nil? (get-in s [:connection :pcb-version])))
       (is (some? (:config s)))
       (is (vector? (:log s)))
-      (is (= :about (:active-section s)))
+      (is (= :welcome (:active-section s)))
       (is (false? (:dirty s))))))
 
 (deftest log-appends
@@ -79,3 +79,28 @@
   (testing "integer set-config-value!"
     (state/set-config-value! [:rgbled :brightness] 127)
     (is (= 127 (get-in @state/*state [:config :rgbled :brightness])))))
+
+(deftest fw-version-line
+  (testing "v0.5.x firmware -> :legacy"
+    (is (= :legacy (state/fw-version->line "0.5.0-BETA.20240501")))
+    (is (= :legacy (state/fw-version->line "v0.5.2"))))
+  (testing "v0.6.x firmware -> :legacy"
+    (is (= :legacy (state/fw-version->line "0.6.0")))
+    (is (= :legacy (state/fw-version->line "0.6.4-BETA.20250101"))))
+  (testing "v0.7+ firmware -> :v0_7"
+    (is (= :v0_7 (state/fw-version->line "0.7.0-20260609"))))
+  (testing "unclassified major/minor pair -> :unknown"
+    ;; v1.0.0 isn't matched: cond requires (and (>= M 1) (>= m 7)).
+    (is (= :unknown (state/fw-version->line "v1.0.0"))))
+  (testing "unparseable -> :unknown"
+    (is (= :unknown (state/fw-version->line nil)))
+    (is (= :unknown (state/fw-version->line "")))
+    (is (= :unknown (state/fw-version->line "garbage")))))
+
+(deftest set-connection-fw-line
+  (testing "set-connection! stores derived :fw-line"
+    (state/set-connection! :connected "0.6.4-BETA.20250101" "1.4")
+    (is (= :legacy (get-in @state/*state [:connection :fw-line]))))
+  (testing "v0.7 board stores :v0_7"
+    (state/set-connection! :connected "0.7.0-20260609" "1.5")
+    (is (= :v0_7 (get-in @state/*state [:connection :fw-line])))))

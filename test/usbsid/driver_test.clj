@@ -4,7 +4,7 @@
    [usbsid.driver       :as driver]
    [usbsid.config-model :as model]))
 
-; ── Test helpers ──────────────────────────────────────────────────────────────
+; Test helpers
 
 (defn- make-buf
   "64-byte zero array with specific [offset value] pairs set.
@@ -22,7 +22,7 @@
 ; DEFAULT clock: 1000000 = 0x0F4240 → bytes 0x0F 0x42 0x40
 (def default-bytes [7 0x0F  8 0x42  9 0x40])
 
-; ── parse-config-bytes tests ──────────────────────────────────────────────────
+; parse-config-bytes tests
 
 (deftest parse-clock-rate
   (testing "PAL clock"
@@ -157,11 +157,11 @@
     (is (true? (get-in cfg [:fmopl  :enabled])))
     (is (= 2   (get-in cfg [:fmopl  :sidno])))))
 
-; ── config->commands tests ────────────────────────────────────────────────────
+; config->commands tests
 
 (deftest commands-count
-  (testing "always emits 23 SET_CONFIG commands"
-    (is (= 23 (count (driver/config->commands model/initial-config))))))
+  (testing "always emits 25 SET_CONFIG commands"
+    (is (= 25 (count (driver/config->commands model/initial-config))))))
 
 (deftest commands-clock-pal
   (let [cfg   (assoc model/initial-config :clock-rate :pal :lock-clockrate false)
@@ -229,18 +229,18 @@
 (deftest commands-fmopl
   (let [cfg  (assoc model/initial-config :fmopl {:enabled true :sidno 2})
         cmds (driver/config->commands cfg)]
-    (is (= [0x9 1 0] (nth cmds 17))))) ; FMOpl enabled=1
+    (is (= [0x9 1 0] (nth cmds 19))))) ; FMOpl enabled=1
 
 (deftest commands-advanced
   (let [cfg  (assoc model/initial-config
                     :stereo-en true :lock-audio-sw false
                     :mirrored false :flipped true :mixed false)
         cmds (driver/config->commands cfg)]
-    (is (= [0xA 1 0] (nth cmds 18))) ; stereo_en
-    (is (= [0xB 0 0] (nth cmds 19))) ; lock_audio_sw
-    (is (= [0xC 0 0] (nth cmds 20))) ; mirrored
-    (is (= [0xD 1 0] (nth cmds 21))) ; flipped
-    (is (= [0xE 0 0] (nth cmds 22))))) ; mixed
+    (is (= [0xA 1 0] (nth cmds 20))) ; stereo_en
+    (is (= [0xB 0 0] (nth cmds 21))) ; lock_audio_sw
+    (is (= [0xC 0 0] (nth cmds 22))) ; mirrored
+    (is (= [0xD 1 0] (nth cmds 23))) ; flipped
+    (is (= [0xE 0 0] (nth cmds 24))))) ; mixed
 
 (deftest commands-sections-match-c-tool
   (testing "section indices match cfg_usbsid.c write_config"
@@ -259,3 +259,90 @@
       (is (get cmds [0xC 0]))   ; mirrored
       (is (get cmds [0xD 0]))   ; flipped
       (is (get cmds [0xE 0])))))  ; mixed
+
+; legacy (v0.5/v0.6) parse tests
+; Layout sourced from firmware config.c at commits d155709d / 5ad6a671 / 1abe6c2d.
+
+(deftest parse-legacy-clonetype-byte-13
+  (testing "legacy byte 13 = clonetype (NOT sid-id nibbles)"
+    ; chiptype=1 (clone), clonetype=2 (SKPico) → :skpico
+    (let [buf (apply make-buf
+                     (concat pal-bytes [10 1  11 1  12 1  13 2  14 2  15 3]))
+          cfg (driver/parse-config-bytes :legacy buf)]
+      (is (= :skpico  (get-in cfg [:socket-one :chiptype])))
+      ; sid ids are implicit on legacy: 0 / 1 for socket 1
+      (is (= 0        (get-in cfg [:socket-one :sid1 :id])))
+      (is (= 1        (get-in cfg [:socket-one :sid2 :id])))
+      (is (= :mos8580 (get-in cfg [:socket-one :sid1 :type])))
+      (is (= :mos6581 (get-in cfg [:socket-one :sid2 :type]))))))
+
+(deftest parse-legacy-chiptype-combinations
+  (testing "chiptype=0 (real) → :real regardless of clonetype byte"
+    (let [cfg (driver/parse-config-bytes :legacy (make-buf 12 0 13 5))]
+      (is (= :real (get-in cfg [:socket-one :chiptype])))))
+  (testing "chiptype=2 (unknown) → :unknown"
+    (let [cfg (driver/parse-config-bytes :legacy (make-buf 12 2 13 0))]
+      (is (= :unknown (get-in cfg [:socket-one :chiptype])))))
+  (testing "clone + ARMSID/FPGASID/RedipSID map correctly"
+    (is (= :armsid   (get-in (driver/parse-config-bytes :legacy (make-buf 12 1 13 3)) [:socket-one :chiptype])))
+    (is (= :fpgasid  (get-in (driver/parse-config-bytes :legacy (make-buf 12 1 13 4)) [:socket-one :chiptype])))
+    (is (= :redipsid (get-in (driver/parse-config-bytes :legacy (make-buf 12 1 13 5)) [:socket-one :chiptype])))))
+
+(deftest parse-legacy-mirrored-byte-22
+  (testing "legacy byte 22 holds the global mirrored flag (NOT byte 60)"
+    (let [cfg (driver/parse-config-bytes :legacy (make-buf 22 1))]
+      (is (true?  (:mirrored cfg)))
+      (is (false? (:flipped cfg)))
+      (is (false? (:mixed cfg)))))
+  (testing "legacy byte 60 is ignored (v0.7 bitfield doesn't exist)"
+    (let [cfg (driver/parse-config-bytes :legacy (make-buf 60 7))]
+      (is (false? (:mirrored cfg)))
+      (is (false? (:flipped cfg)))
+      (is (false? (:mixed cfg))))))
+
+(deftest parse-legacy-no-confirm-flow
+  (testing "legacy parser hard-sets :need-confirmation / :disable-changedetect false"
+    (let [cfg (driver/parse-config-bytes :legacy (make-buf 2 1 3 1))]
+      (is (false? (:need-confirmation cfg)))
+      (is (false? (:disable-changedetect cfg))))))
+
+; legacy write tests
+
+(deftest commands-legacy-mirrored-route
+  (testing "legacy writer routes :mirrored to [0x2 0x6 v], NOT [0xC v 0]"
+    (let [cfg  (assoc model/initial-config :mirrored true)
+          cmds (set (driver/config->commands :legacy cfg))]
+      (is (contains? cmds [0x2 0x6 1]))
+      (is (not-any? (fn [[s _ _]] (= s 0xC)) cmds)))))
+
+(deftest commands-legacy-no-flip-mix
+  (testing "legacy writer omits sections 0xD (flipped) and 0xE (mixed)"
+    (let [cfg  (assoc model/initial-config :flipped true :mixed true)
+          cmds (driver/config->commands :legacy cfg)]
+      (is (not-any? (fn [[s _ _]] (#{0xD 0xE} s)) cmds)))))
+
+(deftest commands-legacy-split-chiptype-clonetype
+  (testing "legacy writer emits chiptype + clonetype for clone chips"
+    (let [cfg  (-> model/initial-config
+                   (assoc-in [:socket-one :chiptype] :armsid)
+                   (assoc-in [:socket-two :chiptype] :real))
+          cmds (set (driver/config->commands :legacy cfg))]
+      ; ARMSID → chiptype=1 (clone), clonetype=3
+      (is (contains? cmds [0x1 0x2 1]))
+      (is (contains? cmds [0x1 0x3 3]))
+      ; Real → chiptype=0, clonetype=0
+      (is (contains? cmds [0x2 0x2 0]))
+      (is (contains? cmds [0x2 0x3 0])))))
+
+(deftest commands-legacy-drops-unsupported-chip
+  (testing "legacy writer drops chiptype + clonetype writes for v0.7-only chips"
+    (let [cfg  (assoc-in model/initial-config [:socket-one :chiptype] :arm2sid)
+          cmds (driver/config->commands :legacy cfg)
+          s1   (filter (fn [[s _ _]] (= s 0x1)) cmds)]
+      ; :arm2sid has no legacy mapping → no chiptype (0x2) or clonetype (0x3) write
+      (is (not-any? (fn [[_ i _]] (#{0x2 0x3} i)) s1))
+      ; enabled / dualsid / sid types must still be present
+      (is (some (fn [[_ i _]] (= i 0x0)) s1))
+      (is (some (fn [[_ i _]] (= i 0x1)) s1))
+      (is (some (fn [[_ i _]] (= i 0x4)) s1))
+      (is (some (fn [[_ i _]] (= i 0x5)) s1)))))

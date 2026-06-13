@@ -5,7 +5,7 @@
    [usbsid.ini-io       :as ini-io]
    [usbsid.config-model :as model]))
 
-; ── export helpers ────────────────────────────────────────────────────────────
+; export helpers
 
 (deftest export-sections-present
   (let [out (ini-io/config->ini model/initial-config "v0.6.0")]
@@ -97,7 +97,7 @@
     (is (string/includes? out "set_to = Stereo"))
     (is (string/includes? out "lock_audio_switch = False"))))
 
-; ── import helpers ────────────────────────────────────────────────────────────
+; import helpers
 
 (deftest import-clock-pal
   (let [ini "[General]\nclock_rate = 985248\n"
@@ -186,7 +186,7 @@
         cfg (ini-io/ini->config ini model/initial-config)]
     (is (false? (:stereo-en cfg)))))
 
-; ── round-trip ────────────────────────────────────────────────────────────────
+; round-trip
 
 (deftest round-trip-default-config
   (let [ini (ini-io/config->ini model/initial-config "v0.6.0")
