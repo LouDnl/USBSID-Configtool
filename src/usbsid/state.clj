@@ -30,7 +30,7 @@
                     :pcb-version   nil
                     :config-status :none}
    :config         model/initial-config
-   :active-section :about
+   :active-section :welcome
    :log            [(format
                      "USBSID-Pico Config Tool v%s"
                      (trim-newline (slurp (io/resource ".version"))))]
