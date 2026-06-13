@@ -24,8 +24,8 @@
             (cond
               (and (zero? M) (<= m 6))  :legacy ; 0.1.0 ~  0.6.4
               (or
-               (and (zero? M) (>= m 7))
-               (and (>= M 1) (>= m 7))) :v0_7 ; 0.7.0+
+               (and (zero? M) (>= m 7)) ; 0.7.0+
+               (>= M 1)) :v0_7 ; or 1.0.0+
               :else                     :unknown)))) ; usually when not connected
       :unknown)) ; usually when not connected
 
