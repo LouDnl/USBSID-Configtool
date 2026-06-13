@@ -27,9 +27,13 @@
 
 ;;; Parsers
 
-(defn parse-config-bytes
-  "Parses the config byte-buffer into a Clojure datastructure"
-  [^bytes buf]
+(defmulti parse-config-bytes*
+  "Parse the 64-byte config response into a config map. Dispatches on the
+   firmware-line keyword (`:v0_7` / `:legacy`). See PROJECT.md §9.0.2."
+  (fn [fw-line _buf] fw-line))
+
+(defmethod parse-config-bytes* :v0_7
+  [_ ^bytes buf]
   (let [g         (fn [i] (ba-get buf i)) ; get byte from buffer
         clock-val (bit-or (bit-shift-left (g 7) 16)
                           (bit-shift-left (g 8) 8)
@@ -92,41 +96,188 @@
      :flipped              (pos? (bit-and (g 60) 0x2))
      :mixed                (pos? (bit-and (g 60) 0x4))}))
 
+(defmethod parse-config-bytes* :legacy
+  [_ ^bytes buf]
+  ; v0.5.0 / v0.6.0 / v0.6.4 firmware byte layout. Differences vs v0.7.x:
+  ; - byte 2, 3, 60 are unused (need-confirmation / disable-changedetect / mirror-flip-mix don't exist).
+  ; - bytes 13 + 24 store clonetype (NOT packed SID-id nibbles). SID ids are implicit (0..3).
+  ; - byte 22 stores the (global) mirrored flag.
+  ; - chiptype byte 12/23 is the 3-value legacy enum (real/clone/unknown); combine with clonetype
+  ;   byte to map onto the unified flat chip-types model via model/legacy->flat-chip.
+  (let [g         (fn [i] (ba-get buf i))
+        clock-val (bit-or (bit-shift-left (g 7) 16)
+                          (bit-shift-left (g 8) 8)
+                          (g 9))
+        clk-enum  (Config$CLK/getCLK (int clock-val))
+        clk-id    (if clk-enum (Config$CLK/clkID clk-enum) 1)]
+    {:raw-config           buf
+     :need-confirmation    false
+     :disable-changedetect false
+     :lock-clockrate       (pos? (g 5))
+     :external-clock       (pos? (g 6))
+     :clock-rate           (:key (get model/clock-rate-by-id clk-id {:key :pal}))
+     :socket-one           {:enabled  (pos? (g 10))
+                            :dualsid  (pos? (g 11))
+                            :chiptype (model/legacy->flat-chip (g 12) (g 13))
+                            :sid1     {:id   0
+                                       :addr (sid-addr 0)
+                                       :type (:key (get model/sid-type-by-id (g 14) {:key :unknown}))}
+                            :sid2     {:id   1
+                                       :addr (sid-addr 1)
+                                       :type (:key (get model/sid-type-by-id (g 15) {:key :unknown}))}}
+     :socket-two           {:enabled  (pos? (g 20))
+                            :dualsid  (pos? (g 21))
+                            :chiptype (model/legacy->flat-chip (g 23) (g 24))
+                            :sid1     {:id   2
+                                       :addr (sid-addr 2)
+                                       :type (:key (get model/sid-type-by-id (g 25) {:key :unknown}))}
+                            :sid2     {:id   3
+                                       :addr (sid-addr 3)
+                                       :type (:key (get model/sid-type-by-id (g 26) {:key :unknown}))}}
+     :led                  {:enabled      (pos? (g 30))
+                            :idle-breathe (pos? (g 31))}
+     :rgbled               {:enabled      (pos? (g 40))
+                            :idle-breathe (pos? (g 41))
+                            :brightness   (g 42)
+                            :sid-to-use   (let [v (g 43)] (if (or (zero? v) (= v 0xFF)) -1 v))}
+     :cdc                  {:enabled (pos? (g 51))}
+     :webusb               {:enabled (pos? (g 52))}
+     :asid                 {:enabled (pos? (g 53))}
+     :midi                 {:enabled (pos? (g 54))}
+     :fmopl                {:enabled (pos? (g 55))
+                            :sidno   (g 56)}
+     :stereo-en            (pos? (g 57))
+     :lock-audio-sw        (pos? (g 58))
+     :mirrored             (pos? (g 22))
+     :flipped              false
+     :mixed                false}))
+
+(defn parse-config-bytes
+  "Parse the 64-byte config response. Single-arg form (legacy callsites + tests)
+   assumes the current `:v0_7` byte layout. Pass `fw-line` to dispatch on a
+   different firmware schema (`:legacy` for v0.5.x / v0.6.x)."
+  ([buf]         (parse-config-bytes* :v0_7 buf))
+  ([fw-line buf] (parse-config-bytes* fw-line buf)))
+
 
 ;;; Write config helpers
 
-(defn config->commands
-  "Converts a config map to seq of [section item value] triples for SET_CONFIG.
-   Testable without hardware."
-  [cfg]
-  (let [s1  (:socket-one cfg)
+(def config-path->command-id ; gets config->commands location id in list (fw v0.7.0+ only!)
+  {[:clock-rate]             0
+   [:lock-clockrate]         0
+   [:socket-one :enabled]    1
+   [:socket-one :dualsid]    2
+   [:socket-one :chiptype]   3
+   [:socket-one :sid1 :type] 4
+   [:socket-one :sid2 :type] 5
+   [:socket-two :enabled]    6
+   [:socket-two :dualsid]    7
+   [:socket-two :chiptype]   8
+   [:socket-two :sid1 :type] 9
+   [:socket-two :sid2 :type] 10
+   [:led :enabled]           11
+   [:led :idle-breathe]      12
+   [:rgbled :enabled]        13
+   [:rgbled :idle-breathe]   14
+   [:rgbled :brightness]     15
+   [:rgbled :sid-to-use]     16
+   [:asid :enabled]          17
+   [:midi :enabled]          18
+   [:fmopl :enabled]         19
+   [:stereo-en]              20
+   [:lock-audio-sw]          21
+   [:mirrored]               22
+   [:flipped]                23
+   [:mixed]                  24})
+
+(defmulti config->commands*
+  "Convert a config map to a seq of [section item value] triples for SET_CONFIG.
+   Dispatch on firmware-line keyword (`:v0_7` / `:legacy`). See PROJECT.md §9.0.2."
+  (fn [fw-line _cfg] fw-line))
+
+(defmethod config->commands* :v0_7
+  [_ {:keys [singles] :as cfg}]
+  (let [cfg (if singles
+              (model/deep-merge model/initial-config cfg)
+              cfg)
+        s1  (:socket-one cfg)
         s2  (:socket-two cfg)
         led (:led cfg)
         rgb (:rgbled cfg)]
     [[0x0 (:id (get model/clock-rate-by-key (:clock-rate cfg) {:id 1}))
-      (if (:lock-clockrate cfg) 1 0)]
-     [0x1 0x0 (if (:enabled s1) 1 0)]
-     [0x1 0x1 (if (:dualsid s1) 1 0)]
-     [0x1 0x2 (:id (get model/chip-type-by-key (:chiptype s1) {:id 1}))]
-     [0x1 0x4 (:id (get model/sid-type-by-key (get-in s1 [:sid1 :type]) {:id 0}))]
-     [0x1 0x5 (:id (get model/sid-type-by-key (get-in s1 [:sid2 :type]) {:id 0}))]
-     [0x2 0x0 (if (:enabled s2) 1 0)]
-     [0x2 0x1 (if (:dualsid s2) 1 0)]
-     [0x2 0x2 (:id (get model/chip-type-by-key (:chiptype s2) {:id 1}))]
-     [0x2 0x4 (:id (get model/sid-type-by-key (get-in s2 [:sid1 :type]) {:id 0}))]
-     [0x2 0x5 (:id (get model/sid-type-by-key (get-in s2 [:sid2 :type]) {:id 0}))]
-     [0x3 0x0 (if (:enabled led) 1 0)]
-     [0x3 0x1 (if (:idle-breathe led) 1 0)]
-     [0x4 0x0 (if (:enabled rgb) 1 0)]
-     [0x4 0x1 (if (:idle-breathe rgb) 1 0)]
-     [0x4 0x2 (:brightness rgb)]
-     [0x4 0x3 (max 0 (:sid-to-use rgb))]
-     [0x9 (if (get-in cfg [:fmopl :enabled]) 1 0) 0]
-     [0xA (if (:stereo-en cfg) 1 0) 0]
-     [0xB (if (:lock-audio-sw cfg) 1 0) 0]
-     [0xC (if (:mirrored cfg) 1 0) 0]
-     [0xD (if (:flipped cfg) 1 0) 0]
-     [0xE (if (:mixed cfg) 1 0) 0]]))
+      (if (:lock-clockrate cfg) 1 0)] ; 0
+     [0x1 0x0 (if (:enabled s1) 1 0)] ; 1
+     [0x1 0x1 (if (:dualsid s1) 1 0)] ; 2
+     [0x1 0x2 (:id (get model/chip-type-by-key (:chiptype s1) {:id 1}))] ; 3
+     [0x1 0x4 (:id (get model/sid-type-by-key (get-in s1 [:sid1 :type]) {:id 0}))] ; 4
+     [0x1 0x5 (:id (get model/sid-type-by-key (get-in s1 [:sid2 :type]) {:id 0}))] ; 5
+     [0x2 0x0 (if (:enabled s2) 1 0)] ; 6
+     [0x2 0x1 (if (:dualsid s2) 1 0)] ; 7
+     [0x2 0x2 (:id (get model/chip-type-by-key (:chiptype s2) {:id 1}))] ; 8
+     [0x2 0x4 (:id (get model/sid-type-by-key (get-in s2 [:sid1 :type]) {:id 0}))] ; 9
+     [0x2 0x5 (:id (get model/sid-type-by-key (get-in s2 [:sid2 :type]) {:id 0}))] ; 10
+     [0x3 0x0 (if (:enabled led) 1 0)] ; 11
+     [0x3 0x1 (if (:idle-breathe led) 1 0)] ; 12
+     [0x4 0x0 (if (:enabled rgb) 1 0)] ; 13
+     [0x4 0x1 (if (:idle-breathe rgb) 1 0)] ; 14
+     [0x4 0x2 (:brightness rgb)] ; 15
+     [0x4 0x3 (max 0 (:sid-to-use rgb))] ; 16
+     [0x7 (if (:asid cfg) 1 0) 0] ; 17
+     [0x8 (if (:midi cfg) 1 0) 0] ; 18
+     [0x9 (if (get-in cfg [:fmopl :enabled]) 1 0) 0] ; 19
+     [0xA (if (:stereo-en cfg) 1 0) 0] ; 20
+     [0xB (if (:lock-audio-sw cfg) 1 0) 0] ; 21
+     [0xC (if (:mirrored cfg) 1 0) 0] ; 22
+     [0xD (if (:flipped cfg) 1 0) 0] ; 23
+     [0xE (if (:mixed cfg) 1 0) 0]])) ; 24
+
+(defn- legacy-socket-cmds
+  "SET_CONFIG triples for one legacy-firmware socket.
+   `section` = 0x1 (s1) or 0x2 (s2). Drops chip writes whose flat key has
+   no legacy {chiptype, clonetype} mapping (`:arm2sid`, `:pdsid`, `:backsid`,
+   `:sidemu`) - those would silently no-op on the firmware. Caller logs the
+   drop via the writer-level guard in `send-config!`."
+  [section sock]
+  (let [chip-key (:chiptype sock)
+        legacy   (model/flat-chip->legacy chip-key)]
+    (cond-> [[section 0x0 (if (:enabled sock) 1 0)]
+             [section 0x1 (if (:dualsid sock) 1 0)]]
+      legacy (conj [section 0x2 (:chiptype legacy)]
+                   [section 0x3 (:clonetype legacy)])
+      true   (conj [section 0x4 (:id (get model/sid-type-by-key (get-in sock [:sid1 :type]) {:id 0}))]
+                   [section 0x5 (:id (get model/sid-type-by-key (get-in sock [:sid2 :type]) {:id 0}))]))))
+
+(defmethod config->commands* :legacy
+  [_ cfg]
+  ; v0.5.0 / v0.6.0 / v0.6.4 SET_CONFIG grid (config.c:467-633). Differences vs v0.7:
+  ; - chip class needs the split `chiptype` (0x_/0x2) + `clonetype` (0x_/0x3) writes.
+  ; - global `mirrored` goes through `[0x2 0x6 v]`, NOT `[0xC v 0]`.
+  ; - sections 0xD (flipped) and 0xE (mixed) don't exist; omit the writes.
+  (let [s1  (:socket-one cfg)
+        s2  (:socket-two cfg)
+        led (:led cfg)
+        rgb (:rgbled cfg)]
+    (concat
+     [[0x0 (:id (get model/clock-rate-by-key (:clock-rate cfg) {:id 1}))
+       (if (:lock-clockrate cfg) 1 0)]]
+     (legacy-socket-cmds 0x1 s1)
+     (legacy-socket-cmds 0x2 s2)
+     [[0x2 0x6 (if (:mirrored cfg) 1 0)]
+      [0x3 0x0 (if (:enabled led) 1 0)]
+      [0x3 0x1 (if (:idle-breathe led) 1 0)]
+      [0x4 0x0 (if (:enabled rgb) 1 0)]
+      [0x4 0x1 (if (:idle-breathe rgb) 1 0)]
+      [0x4 0x2 (:brightness rgb)]
+      [0x4 0x3 (max 0 (:sid-to-use rgb))]
+      [0x9 (if (get-in cfg [:fmopl :enabled]) 1 0) 0]
+      [0xA (if (:stereo-en cfg) 1 0) 0]
+      [0xB (if (:lock-audio-sw cfg) 1 0) 0]])))
+
+(defn config->commands
+  "Single-arg form (legacy callsites + tests) targets the current `:v0_7`
+   firmware. Pass `fw-line` to target the legacy schema (`:legacy`)."
+  ([cfg]         (config->commands* :v0_7 cfg))
+  ([fw-line cfg] (config->commands* fw-line cfg)))
 
 (defn- set-cfg
   "Wrapper around .USBSID_sendconfigcommand"
