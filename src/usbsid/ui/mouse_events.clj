@@ -1,4 +1,5 @@
 (ns usbsid.ui.mouse-events
+  "Wiggle, wiggle, wiggle!"
   (:require
    [cljfx.api :as fx]
    [cljfx.lifecycle :as lifecycle]
@@ -6,6 +7,9 @@
   (:import
    [javafx.scene Node]
    [javafx.stage Popup]))
+
+
+;;; In you're face!
 
 (def popup-width 320)
 
@@ -16,7 +20,7 @@
    (mutator/adder-remover
     (fn [^Popup popup ^Node node]
       (let [bounds   (.getBoundsInLocal node)
-            ;; Anchor popup's bottom-left 4px above the button's top edge —
+            ;; Anchor popup's bottom-left 4px above the button's top edge -
             ;; combined with :anchor-location :window-bottom-left the popup
             ;; grows upward and never overlaps the trigger (overlap would
             ;; fire MOUSE_EXITED and cause a cursor-flicker loop).
@@ -42,8 +46,10 @@
         ;; plain :button doesn't). Default to :button when caller omits.
         trigger (-> button
                     (update :fx/type #(or % :button))
-                    (assoc  :on-mouse-entered {:event/type :popup-show :key popup-key}
-                            :on-mouse-exited  {:event/type :popup-hide :key popup-key}))]
+                    (assoc  :on-mouse-entered {:event/type :popup-show
+                                               :key        popup-key}
+                            :on-mouse-exited  {:event/type :popup-hide
+                                               :key        popup-key}))]
     {:fx/type fx/ext-let-refs
      :refs    {::trigger trigger}
      :desc    {:fx/type fx/ext-let-refs
@@ -62,5 +68,7 @@
                                                      :wrap-text   true
                                                      :effect      {:fx/type :drop-shadow}
                                                      :text        popup-text}]
-                                  prop-shown-on    {:fx/type fx/ext-get-ref :ref ::trigger}}))
-               :desc    {:fx/type fx/ext-get-ref :ref ::trigger}}}))
+                                  prop-shown-on    {:fx/type fx/ext-get-ref
+                                                    :ref     ::trigger}}))
+               :desc    {:fx/type fx/ext-get-ref
+                         :ref     ::trigger}}}))

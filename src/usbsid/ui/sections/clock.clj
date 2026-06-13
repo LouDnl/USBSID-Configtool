@@ -6,6 +6,9 @@
    [usbsid.ui.sections.common :as common]
    [usbsid.ui.widgets :as w]))
 
+
+;;; Clockworx
+
 (defn clock-section
   "I've seen better time"
   [{:keys [config connection hover-popup]}]
@@ -20,8 +23,8 @@
      :children
      [(w/c64-header "CLOCK CONFIGURATION")
 
-      {:fx/type  :h-box
-       :spacing  12
+      {:fx/type :h-box
+       :spacing 12
        :children
        [{:fx/type     :v-box
          :style-class "c64-section"

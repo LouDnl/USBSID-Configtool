@@ -3,6 +3,9 @@
   (:require
    [usbsid.ui.widgets :as w]))
 
+
+;;; I'm rolling rolling rolling!
+
 (defn sid-tests-section
   "Well, it is what is is now aint it?"
   [{:keys [connected?]}]

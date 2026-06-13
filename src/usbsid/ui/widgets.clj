@@ -1,11 +1,16 @@
 (ns usbsid.ui.widgets
   "Well, widget me this, widget me that!")
 
+
+;;; Here be widgets!
+
 (defn c64-label
   "I feel so alone"
   ([text] (c64-label text {}))
   ([text {:keys [style-class bright dim]
-          :or   {style-class nil bright false dim false}}]
+          :or   {style-class nil
+                 bright      false
+                 dim         false}}]
    {:fx/type     :label
     :text        text
     :style-class (cond bright "c64-label-bright"
@@ -25,7 +30,8 @@
   "Stop pushing me"
   ([text on-action] (c64-button text on-action {}))
   ([text on-action {:keys [style-class disabled]
-                    :or   {style-class "c64-button" disabled false}}]
+                    :or   {style-class "c64-button"
+                           disabled    false}}]
    {:pre [(string? text)]}
    {:fx/type     :button
     :text        text
@@ -35,7 +41,8 @@
 
 (defn c64-toggle
   "That tickles!"
-  [selected on-action & {:keys [disabled] :or {disabled false}}]
+  [selected on-action & {:keys [disabled]
+                         :or   {disabled false}}]
   {:fx/type     :toggle-button
    :text        (if selected "ON " "OFF")
    :selected    selected
@@ -63,13 +70,13 @@
    & {:keys [disabled comboboxclass]
       :or   {disabled      false
              comboboxclass "c64-combo-box"}}]
-  {:fx/type           :combo-box
-   :style-class       ["combo-box" comboboxclass]
-   :items             (mapv :label items)
-   :value             (when selected-key
-                        (-> (filter (comp #{selected-key} :key) items) first :label))
-   :on-value-changed  on-change
-   :disable           disabled})
+  {:fx/type          :combo-box
+   :style-class      ["combo-box" comboboxclass]
+   :items            (mapv :label items)
+   :value            (when selected-key
+                       (-> (filter (comp #{selected-key} :key) items) first :label))
+   :on-value-changed on-change
+   :disable          disabled})
 
 (defn c64-labeled-combo
   "Use me already"

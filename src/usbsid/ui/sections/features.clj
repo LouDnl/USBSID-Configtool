@@ -1,10 +1,10 @@
 (ns usbsid.ui.sections.features
   "Who are you featuring today?"
   (:require
+   [clojure.core :as c]
    [usbsid.config-model :as model]
    [usbsid.ui.widgets :as w]
-   [usbsid.ui.sections.common :as common]
-   [clojure.core :as c]))
+   [usbsid.ui.sections.common :as common]))
 
 
 ;;; Features, not futures!
@@ -147,10 +147,10 @@
        [{:fx/type     :v-box
          :style-class "c64-section"
          :spacing     6
-         :disable    (or (= (:status connection) :disconnected)
-                         (and
-                          (= (:status connection) :connected)
-                          (< (model/parse-pcb-version (:pcb-version connection)) 13)))
+         :disable     (or (= (:status connection) :disconnected)
+                          (and
+                           (= (:status connection) :connected)
+                           (< (model/parse-pcb-version (:pcb-version connection)) 13)))
          :children
          [(w/c64-row "Stereo Mode"
                      (common/toggles
@@ -180,8 +180,6 @@
                        :hover-text  "Lock the audio switch from being changed"
                        :popup-key   [:stereo :locked]}))]}]}
 
-
-
       (w/c64-separator)
       (w/c64-header "PCB v1.5+ Options")
 
@@ -191,11 +189,11 @@
        [{:fx/type     :v-box
          :style-class "c64-section"
          :spacing     6
-         :disable    (or confirm-disable
-                         (= (:status connection) :disconnected)
-                         (and
-                          (= (:status connection) :connected)
-                          (< (model/parse-pcb-version (:pcb-version connection)) 15)))
+         :disable     (or confirm-disable
+                          (= (:status connection) :disconnected)
+                          (and
+                           (= (:status connection) :connected)
+                           (< (model/parse-pcb-version (:pcb-version connection)) 15)))
          :children
          [(w/c64-row "Disable Socket Change Detect"
                      (common/toggles

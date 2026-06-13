@@ -11,9 +11,11 @@
    [java.util.logging Level Logger LogManager LogRecord]))
 
 
+;;; Well well well
+
 (defn start-logger
   "Read logging.properties from classpath into the global LogManager.
-   Idempotent — safe to call multiple times."
+   Idempotent - safe to call multiple times."
   []
   (-> (LogManager/getLogManager)
       (.readConfiguration

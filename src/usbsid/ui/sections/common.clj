@@ -80,22 +80,38 @@
     {:fx/type     :h-box
      :style-class "c64-hbox"
      :children
-     [{:fx/type :label :text "Firmware version:" :style-class "c64-label-dim"}
-      {:fx/type :label :text (or (when fw (str "v" fw)) "---") :style-class "c64-label-bright"}]}
+     [{:fx/type     :label
+       :text        "Firmware version:"
+       :style-class "c64-label-dim"}
+      {:fx/type     :label
+       :text        (or (when fw (str "v" fw)) "---")
+       :style-class "c64-label-bright"}]}
     {:fx/type     :h-box
      :style-class "c64-hbox"
      :children
-     [{:fx/type :label :text "PCB version:" :style-class "c64-label-dim"}
-      {:fx/type :label :text (or (when pcb (str "v" pcb)) "---") :style-class "c64-label-bright"}]}]})
+     [{:fx/type     :label
+       :text        "PCB version:"
+       :style-class "c64-label-dim"}
+      {:fx/type     :label
+       :text        (or (when pcb (str "v" pcb)) "---")
+       :style-class "c64-label-bright"}]}]})
 
 (def credits-text-block
   {:fx/type :v-box
    :children
    [(w/c64-header "CREDITS")
-    {:fx/type :label :text "PCB, Firmware & config tool by LouD" :style-class "c64-label"}
-    {:fx/type :label :text "Software license: GPLv2" :style-class "c64-label-dim"}
-    {:fx/type :label :text "Firmware license: GNUv2" :style-class "c64-label-dim"}
-    {:fx/type :label :text "Hardware license: Creative Commons" :style-class "c64-label-dim"}]})
+    {:fx/type     :label
+     :text        "PCB, Firmware & config tool by LouD"
+     :style-class "c64-label"}
+    {:fx/type     :label
+     :text        "Software license: GPLv2"
+     :style-class "c64-label-dim"}
+    {:fx/type     :label
+     :text        "Firmware license: GNUv2"
+     :style-class "c64-label-dim"}
+    {:fx/type     :label
+     :text        "Hardware license: Creative Commons"
+     :style-class "c64-label-dim"}]})
 
 (def revisions-text-block
   {:fx/type :v-box
@@ -124,11 +140,13 @@
      :children
      [{:fx/type     :button
        :text        "GITHUB"
-       :on-action   {:event/type :open-url :url github-url}
+       :on-action   {:event/type :open-url
+                     :url        github-url}
        :style-class "c64-button"}
       {:fx/type     :button
        :text        "FIRMWARE RELEASES"
-       :on-action   {:event/type :open-url :url release-url}
+       :on-action   {:event/type :open-url
+                     :url        release-url}
        :style-class "c64-button"}]}]})
 
 (defmacro popup
@@ -142,7 +160,7 @@
 (defn toggles
   "`toggle` selects the popup variant (currently only `:onoff`).
    `:popup-key` must be unique per call site so popups don't fire on every
-   sibling at once — pass something like `[socket-key :enabled]`. Defaults to
+   sibling at once - pass something like `[socket-key :enabled]`. Defaults to
    `toggle` for back-compat, which is NOT unique when reused across sockets."
   [toggle item & {:keys [hover-popup hover-text popup-key]}]
   (toggle

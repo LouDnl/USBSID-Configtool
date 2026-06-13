@@ -7,10 +7,12 @@
    [usbsid.ui.widgets :as w]))
 
 
+;;; It's in there somewhere!
+
 (defn socket-panel
   "Well, it's me, you caught me, plug me in already!"
   [{:keys [socket-key socket fw-line connected? hover-popup]}]
-  (let [label     (if (= socket-key :socket-one) "SOCKET 1" "SOCKET 2")
+  (let [label      (if (= socket-key :socket-one) "SOCKET 1" "SOCKET 2")
         chip-types (if (= fw-line :legacy)
                      (filterv (comp model/legacy-supports-chip? :key) model/chip-types)
                      model/chip-types)
@@ -115,8 +117,8 @@
 (defn fmopl-panel
   "I'm good at making noises"
   [config & {:keys [hover-popup]}]
-  {:fx/type  :h-box
-   :spacing  12
+  {:fx/type :h-box
+   :spacing 12
    :children
    [{:fx/type     :v-box
      :style-class "c64-section"
@@ -134,8 +136,8 @@
                           :text        (if (get-in config [:fmopl :enabled]) "ON " "OFF")
                           :selected    (get-in config [:fmopl :enabled])
                           :on-action   {:event/type :config-changed
-                                        :path [:fmopl :enabled]
-                                        :value (not (get-in config [:fmopl :enabled]))}
+                                        :path       [:fmopl :enabled]
+                                        :value      (not (get-in config [:fmopl :enabled]))}
                           :style-class "c64-toggle"}
                          {:hover-popup hover-popup
                           :hover-text  "Disable or enable FMOpl, after saving the SID No. will automatically be detected if needed"
@@ -155,8 +157,8 @@
 (defn preset-panel
   "If your lazy like, kinda..."
   [config]
-  {:fx/type  :h-box
-   :spacing  12
+  {:fx/type :h-box
+   :spacing 12
    :children
    [{:fx/type     :v-box
      :style-class "c64-section"
@@ -184,13 +186,14 @@
        :spacing     8
        :children
        [(w/c64-button "APPLY PRESET"
-                      {:event/type :apply-preset :preset (:last-preset config)})]}]}]})
+                      {:event/type :apply-preset
+                       :preset     (:last-preset config)})]}]}]})
 
 (defn sockets-section
   "I hold the one true specials!"
   [{:keys [config connection hover-popup]}]
-  (let [fw-line   (or (:fw-line connection) :v0_7)
-        connected?    (= :connected (:status connection))]
+  (let [fw-line    (or (:fw-line connection) :v0_7)
+        connected? (= :connected (:status connection))]
     {:fx/type     :v-box
      :style-class "c64-vbox"
      :spacing     12

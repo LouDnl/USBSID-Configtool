@@ -63,18 +63,18 @@
     {:fx/type     :border-pane
      :style-class "c64-title-bar"
      :left
-     {:fx/type  :h-box
-      :spacing  10
+     {:fx/type   :h-box
+      :spacing   10
       :alignment :center-left
       :children
       [(if-let [img (logo-image)]
-         {:fx/type      :image-view
-          :image        img
-          :fit-height   40
+         {:fx/type        :image-view
+          :image          img
+          :fit-height     40
           :preserve-ratio true}
          {:fx/type :pane})
-       {:fx/type  :v-box
-        :spacing  2
+       {:fx/type :v-box
+        :spacing 2
         :children
         [{:fx/type     :label
           :text        " USBSID-Pico Configuration Tool" ; ISSUE: This is not neatly ligned out yet
@@ -106,18 +106,21 @@
                          :applied   "c64-config-applied"
                          "c64-subtitle-text")}]}]}
      :right
-     {:fx/type    :v-box
-      :spacing    4
-      :alignment  :center-right
-      :padding    {:top 4 :right 0 :bottom 4 :left 0}
+     {:fx/type   :v-box
+      :spacing   4
+      :alignment :center-right
+      :padding   {:top    4
+                  :right  0
+                  :bottom 4
+                  :left   0}
       :children
       [{:fx/type     :label
         :alignment   :center
         :max-width   Double/MAX_VALUE
         :text        (if connected? "** CONNECTED **" "** DISCONNECTED **")
         :style-class (if connected? "c64-status-connected" "c64-status-disconnected")}
-       {:fx/type   :h-box
-        :spacing   6
+       {:fx/type :h-box
+        :spacing 6
         :children
         [{:fx/type     :button
           :text        "CONNECT"
@@ -169,7 +172,8 @@
    (mapv (fn [{:keys [key label]}]
            {:fx/type     :button
             :text        label
-            :on-action   {:event/type :navigate :section key}
+            :on-action   {:event/type :navigate
+                          :section    key}
             :style-class (if (= key active-section)
                            ["c64-nav-item" "c64-nav-item-active"]
                            "c64-nav-item")})
@@ -185,10 +189,17 @@
    :h-box/hgrow  :always
    :content
    (case active-section
-     :sockets   (s-sockets/sockets-section {:config config :connection connection :hover-popup hover-popup})
-     :clock     (s-clock/clock-section {:config config :connection connection :hover-popup hover-popup})
-     :leds      (s-leds/leds-section {:config config :hover-popup hover-popup})
-     :features  (s-features/features-section {:config config :connection connection :hover-popup hover-popup})
+     :sockets   (s-sockets/sockets-section {:config      config
+                                            :connection  connection
+                                            :hover-popup hover-popup})
+     :clock     (s-clock/clock-section {:config      config
+                                        :connection  connection
+                                        :hover-popup hover-popup})
+     :leds      (s-leds/leds-section {:config      config
+                                      :hover-popup hover-popup})
+     :features  (s-features/features-section {:config      config
+                                              :connection  connection
+                                              :hover-popup hover-popup})
      :sid-tests (s-tests/sid-tests-section {:connected? connected?})
      :debug     (s-debug/debug-section {:connected? connected?})
      :welcome   (s-welcome/about-section {:connection connection})
@@ -243,7 +254,7 @@
                    :bottom 2
                    :left   8}
      :spacing     6
-     :children (action-buttons connected? fw-line hover-popup)}
+     :children    (action-buttons connected? fw-line hover-popup)}
     {:fx/type     :h-box
      :style-class "c64-hbox"
      :padding     {:top    2
@@ -257,7 +268,7 @@
       {:fx/type     :pane
        :h-box/hgrow :always}
       (common/buttons :reset-dflts {:hover-popup hover-popup
-                                    :connected? connected?})]}]})
+                                    :connected?  connected?})]}]})
 
 (defn- log-text-area
   "Here be letters!"
@@ -297,7 +308,7 @@
 (defn root-view
   "In your face!"
   [{:keys [connection config active-section log hover-popup]
-    :as _state}]
+    :as   _state}]
   (let [connected?    (= :connected (:status connection))
         need-confirm? (get config :need-confirmation false)]
     {:fx/type  :stage

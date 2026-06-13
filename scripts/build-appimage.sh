@@ -39,7 +39,7 @@ mkdir -p "$APP_DIR"
 # Copy the entire jpackage app-image into AppDir root
 cp -r "${JPACKAGE_SRC}/." "$APP_DIR/"
 
-# AppRun — delegates to the jpackage native launcher
+# AppRun - delegates to the jpackage native launcher
 cat > "${APP_DIR}/AppRun" << 'APPRUN'
 #!/bin/sh
 SELF_DIR="$(dirname "$(readlink -f "$0")")"
@@ -58,7 +58,7 @@ Type=Application
 Categories=Utility;Electronics;
 DESKTOP
 
-# Icon — use project icon, fall back to 1×1 placeholder
+# Icon - use project icon, fall back to 1×1 placeholder
 ICON_CANDIDATES=(
     "resources/usbsid-configtool-icon.png"
     "resources/usbsid-configtool-logo.png"
@@ -80,7 +80,7 @@ else
     # Minimal 1×1 transparent PNG as placeholder
     printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82' \
         > "${APP_DIR}/${APP_NAME}.png"
-    echo "  WARN: no icon found — using 1×1 placeholder"
+    echo "  WARN: no icon found - using 1×1 placeholder"
 fi
 
 # Download appimagetool if needed

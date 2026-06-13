@@ -7,6 +7,8 @@
    [usbsid.logging :as logging]))
 
 
+;;; The state of the ... whatever
+
 (defn fw-version->line
   "Map a firmware version string to a config-schema branch keyword.
    v0.5.x / v0.6.x firmware share one byte layout (`:legacy`).
@@ -16,8 +18,8 @@
   [fw]
   (or (when (string? fw)
         (when-let [[_ maj min upd] (re-find #"^v?(\d+)\.(\d+)\.(\d+)" fw)]
-          (let [M (Long/parseLong maj)   ; major
-                m (Long/parseLong min)   ; minor
+          (let [M  (Long/parseLong maj)   ; major
+                m  (Long/parseLong min)   ; minor
                 _u (Long/parseLong upd)] ; update
             (cond
               (and (zero? M) (<= m 6))  :legacy ; 0.1.0 ~  0.6.4
@@ -47,7 +49,7 @@
   "Logging wrapper. Appends msg to UI log buffer + emits INFO to JUL with the
    caller's namespace + source line preserved (via `logging/info!`).
    Macro form so the call-site's `*ns*` and `(:line (meta &form))` reach the
-   LogRecord — a defn here would always show `usbsid.state` and line 56."
+   LogRecord - a defn here would always show `usbsid.state` and line 56."
   [msg]
   `(do
      (swap! usbsid.state/*state update :log conj ~msg)

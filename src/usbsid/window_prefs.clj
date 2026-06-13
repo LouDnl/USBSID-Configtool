@@ -33,7 +33,10 @@
 ;;; Default window size
 
 (def ^:private defaults
-  {:x Double/NaN :y Double/NaN :w 1280.0 :h 1024.0})
+  {:x Double/NaN
+   :y Double/NaN
+   :w 1280.0
+   :h 1024.0})
 
 
 ;;; Internal wrappers
@@ -73,5 +76,7 @@
   []
   (when-let [^Window win (first (Window/getWindows))]
     (save-window!
-     {:x (.getX win) :y (.getY win)
-      :w (.getWidth win) :h (.getHeight win)})))
+     {:x (.getX win)
+      :y (.getY win)
+      :w (.getWidth win)
+      :h (.getHeight win)})))

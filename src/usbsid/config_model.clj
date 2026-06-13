@@ -4,6 +4,8 @@
    [clojure.string :refer [join split]]))
 
 
+;;; What you doing?
+
 (defn deep-merge
   "Merge submap items with submap items"
   [a b]
@@ -29,6 +31,9 @@
         (#(clojure.string/join "" %))
         (Long/parseLong))
     0))
+
+
+;;; Fixed things
 
 (def clock-rates
   [{:key :default :label "DEFAULT (1.000 MHz)" :value 1000000 :id 0}
@@ -122,8 +127,9 @@
   (contains? flat-chip->legacy chip-key))
 
 (comment
- "Per-firmware capability set. UI consults this to grey out controls the"
- "connected firmware does not understand")
+  "Per-firmware capability set. UI consults this to grey out controls the"
+  "connected firmware does not understand"
+  )
 (def fw-capabilities
   {:legacy #{:clock :sockets :led :rgb :fmopl :stereo :audio-sw :mirrored}
    :v0_7   #{:clock :sockets :led :rgb :fmopl :stereo :audio-sw :mirrored

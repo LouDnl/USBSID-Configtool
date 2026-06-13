@@ -15,6 +15,8 @@
   (:gen-class))
 
 
+;;; Well, get into it already!
+
 (defn ui-map-desc
   "Default ui map description"
   [s]

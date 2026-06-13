@@ -9,6 +9,8 @@
    [usbsid USBSID USBSIDDevice Config$Cfg Config$CLK Cmd]))
 
 
+;;; Only just this once, I promise!
+
 (defonce ^:private drv-atom (atom nil))
 
 

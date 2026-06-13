@@ -1,8 +1,8 @@
 (ns usbsid.ui.css
   "I make things pritteh!"
   (:require
-   [clojure.java.io :as io]
-   [cljfx.css :as css])
+   [cljfx.css :as css]
+   [clojure.java.io :as io])
   (:import
    [javafx.scene.text Font]))
 
@@ -85,8 +85,8 @@
      :-fx-text-fill   "#8888FF"}
 
     ".c64-log-bar"
-    {:-fx-border-color     "#8888FF"
-     :-fx-border-width     "1px 0 0 0"}
+    {:-fx-border-color "#8888FF"
+     :-fx-border-width "1px 0 0 0"}
 
     ; Status indicators
     ".c64-config-loaded"

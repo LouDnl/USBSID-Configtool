@@ -5,12 +5,15 @@
    [usbsid.ui.sections.common :as common]
    [usbsid.ui.widgets :as w]))
 
+
+;;; Well, it's all about the welcome!
+
 (defn about-section
   "Generates the about tab, pagina uno"
   [{:keys [connection]}]
-  (let [fw       (get-in connection [:fw-version])
-        pcb      (get-in connection [:pcb-version])
-        fwverint (parse-fw-version fw)
+  (let [fw             (get-in connection [:fw-version])
+        pcb            (get-in connection [:pcb-version])
+        fwverint       (parse-fw-version fw)
         warningsection (if (>= fwverint 70)
                          common/warning-text-block
                          common/warning-text-block-legacy)]
