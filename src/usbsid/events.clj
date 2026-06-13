@@ -16,6 +16,12 @@
   (state/set-section! section))
 
 (defmethod handle :config-changed [{:keys [path value]}]
+  (when
+   (and
+    (not= (get-in @state/*state [:connection :fw-line]) :unknown)
+    (not= (get-in @state/*state [:connection :fw-line]) :legacy)
+    (= (get-in @state/*state [:connection :status]) :connected))
+    (driver/set-config! path value))
   (state/set-config-value! path value))
 
 (defmethod handle :connect [_]
