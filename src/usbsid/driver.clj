@@ -288,16 +288,31 @@
    (bit-and (.get Config$Cfg/SET_CONFIG) 0xff)
    (into-array Byte [(cfg-byte a) (cfg-byte b) (cfg-byte c) (cfg-byte d)])))
 
+(defn- current-fw-line
+  "Read the firmware-line keyword from connection state. Defaults to `:v0_7`
+   when no board is connected (preview / dry-run from tests stays on the
+   newest schema)."
+  []
+  (get-in @state/*state [:connection :fw-line] :v0_7))
+
 (defn send-config!
-  "Write all settings from the supplied config, 1 write per setting"
+  "Write all settings from the supplied config, 1 write per setting.
+   Dispatch on the connected board's firmware-line keyword."
   [cfg]
-  (doall
-   (doseq [[a b c] (config->commands cfg)]
-     (try
-       (set-cfg {:a a :b b :c c})
-       (catch Exception e
-         (state/log! (format "send-config! error [0x%X 0x%X 0x%X]: %s" a b c (.getMessage e)))
-         (throw e))))))
+  (let [fw-line (current-fw-line)]
+    (when (= fw-line :legacy)
+      (doseq [sk [:socket-one :socket-two]
+              :let [chip (get-in cfg [sk :chiptype])]
+              :when (and chip (not (model/legacy-supports-chip? chip)))]
+        (state/log! (format "send-config! skipping %s chiptype %s - no v0.5/0.6 equivalent"
+                            (name sk) (name chip)))))
+    (doall
+     (doseq [[a b c] (config->commands fw-line cfg)]
+       (try
+         (set-cfg {:a a :b b :c c})
+         (catch Exception e
+           (state/log! (format "send-config! error [0x%X 0x%X 0x%X]: %s" a b c (.getMessage e)))
+           (throw e)))))))
 
 
 ;;; Internal driver API
