@@ -1,6 +1,7 @@
 (ns usbsid.events
   "It's a party up in here!"
   (:require
+   [usbsid.config-model :as model]
    [usbsid.state :as state]
    [usbsid.driver :as driver]
    [usbsid.ini-io :as ini-io])
@@ -135,9 +136,22 @@
                (-> .getExtensionFilters (.add (ini-ext-filter))))
         file (.showOpenDialog fc nil)]
     (when file
-      (let [ini-str  (slurp file)
-            base-cfg (:config @state/*state)
-            new-cfg  (ini-io/ini->config ini-str base-cfg)]
+      (let [ini-str     (slurp file)
+            base-cfg    (:config @state/*state)
+            new-cfg     (ini-io/ini->config ini-str base-cfg)
+            ini-ver     (ini-io/ini->version ini-str)
+            ini-line    (state/fw-version->line ini-ver)
+            board-line  (get-in @state/*state [:connection :fw-line])]
+        (when (and board-line ini-line (not= board-line ini-line))
+          (state/log!
+           (format "INI source fw %s differs from connected board (%s) - cross-version import"
+                   (or ini-ver "?") (name board-line))))
+        (when (= board-line :legacy)
+          (doseq [sk [:socket-one :socket-two]
+                  :let [chip (get-in new-cfg [sk :chiptype])]
+                  :when (and chip (not (model/legacy-supports-chip? chip)))]
+            (state/log! (format "INI %s chiptype %s has no v0.5/0.6 equivalent - will be dropped on write"
+                                (name sk) (name chip)))))
         (swap! state/*state
                #(-> %
                     (assoc :config new-cfg :dirty true)
