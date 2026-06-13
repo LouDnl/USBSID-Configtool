@@ -57,15 +57,6 @@
 (defmethod handle :save-noreset [_]
   (driver/save-config!))
 
-(defmethod handle :apply-save-config [_]
-  (do
-    (driver/write-config!)
-    (Thread/sleep 500) ; Sleep a while, stay forever?
-    (driver/save-config!)
-    (driver/apply-config!)
-    (Thread/sleep 500) ; Sleep a while, stay forever?
-    (driver/read-config!)))
-
 (defmethod handle :reload-flash [_]
   (driver/reload-config!))
 
