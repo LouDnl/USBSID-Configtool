@@ -476,6 +476,9 @@
                 pcb (read-with-retry #(do-read-pcbversion) valid-pcb-version? 3 50)]
             (state/set-connection! :connected fw pcb)
             (state/log! (format "Connected! FW: v%s PCB: v%s" fw pcb))
+            (when (= (current-fw-line) :legacy)
+              (state/log!
+               "Legacy firmware mode (v0.5/v0.6) - flipped / mixed / disable-changedetect controls disabled"))
             @(read-config!))
           (do (state/set-connection! :disconnected nil nil)
               (state/log! "Connection failed - device not found")))))))
