@@ -11,6 +11,7 @@
 
 # And all these filetypes
 !*.clj
+!*.bb
 
 # Certainly not these directories
 !.github
