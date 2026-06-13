@@ -6,7 +6,6 @@
    [usbsid.state :as state]
    [usbsid.config-model :as model])
   (:import
-   [java.util.logging Level]
    [usbsid USBSID USBSIDDevice Config$Cfg Config$CLK Cmd]))
 
 
@@ -326,7 +325,7 @@
     (try
       (f)
       (catch Throwable t
-        (.log @logging/logger Level/SEVERE (str label " error") t)
+        (logging/severe (str label " error") t)
         (state/log! (str label " error: " (.getName (class t)) " - " (.getMessage t)))))))
 
 (defn- valid-fw-version?

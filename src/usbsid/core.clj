@@ -4,13 +4,12 @@
    [cljfx.api :as fx]
    [usbsid.driver :as driver]
    [usbsid.events :as events]
-   [usbsid.logging :as logging :refer [logger]]
+   [usbsid.logging :as logging]
    [usbsid.state :as state]
    [usbsid.ui.css :as css]
    [usbsid.ui.main :as ui]
    [usbsid.window-prefs :as win-prefs])
   (:import
-   [java.util.logging Level]
    [javafx.application Platform]
    [javafx.stage Window])
   (:gen-class))
@@ -53,12 +52,12 @@
   []
   (when (driver/connected?)
     (driver/disconnect!)
-    (.fine @logger "Driver disconnected"))
+    (logging/fine "Driver disconnected"))
   (when @renderer
     (fx/unmount-renderer state/*state @renderer)
     (reset! renderer nil)
     (reset! state/*state state/initial-state)
-    (.fine @logger "Renderer & state unmounted"))
+    (logging/fine "Renderer & state unmounted"))
   (let [done (promise)]
     (Platform/runLater
      (fn []
@@ -73,16 +72,16 @@
   [& _args]
   (try
     (start-app)
-    (.fine @logger "Renderer & state mounted")
+    (logging/fine "Renderer & state mounted")
     (deref ui/signalled)
-    (.fine @logger "Signal to shutdown received")
+    (logging/fine "Signal to shutdown received")
     (finally
       (try
         (deref ui/stopped)
         (stop-app)
         (catch Exception e
-          (.log @logger Level/SEVERE "Error during shutdown" e)))
+          (logging/severe "Error during shutdown" e)))
       (Platform/exit)
       (shutdown-agents)
-      (.fine @logger "All agents shutdown")
+      (logging/fine "All agents shutdown")
       (System/exit 0))))

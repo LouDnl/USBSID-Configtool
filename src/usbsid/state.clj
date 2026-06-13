@@ -4,6 +4,9 @@
    [clojure.java.io :as io]
    [clojure.string :refer [trim-newline]]
    [usbsid.config-model :as model]
+   [usbsid.logging :as logging]))
+
+
 (defn fw-version->line
   "Map a firmware version string to a config-schema branch keyword.
    v0.5.x / v0.6.x firmware share one byte layout (`:legacy`).
@@ -40,12 +43,15 @@
 
 (def *state (atom initial-state))
 
-(defn log!
-  "Logging wrapper"
+(defmacro log!
+  "Logging wrapper. Appends msg to UI log buffer + emits INFO to JUL with the
+   caller's namespace + source line preserved (via `logging/info!`).
+   Macro form so the call-site's `*ns*` and `(:line (meta &form))` reach the
+   LogRecord — a defn here would always show `usbsid.state` and line 56."
   [msg]
-  (swap! *state update :log conj msg)
-  (when (realized? logger)
-    (.info @logger msg)))
+  `(do
+     (swap! usbsid.state/*state update :log conj ~msg)
+     (logging/info! ~(str *ns*) ~(:line (meta &form)) ~msg)))
 
 (defn set-section!
   "Active section changer"
