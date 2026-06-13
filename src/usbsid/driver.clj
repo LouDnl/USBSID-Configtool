@@ -435,18 +435,24 @@
 (defn connected? [] (USBSIDDevice/isOpen))
 
 (defn read-config!
-  "Read USBSID-Pico configuration"
+  "Read USBSID-Pico configuration. Dispatch parser on connected board's
+   firmware-line so v0.5/v0.6 boards get the legacy byte map (PROJECT.md §9.0)."
   []
   (with-driver "Read config"
     (fn []
       (state/log! "Reading configuration")
-      (let [result (read-with-retry do-read-config valid-config-response? 3 50)]
+      (let [fw-line (current-fw-line)
+            result  (read-with-retry #(do-read-config fw-line) valid-config-response? 3 50)]
         (if (valid-config-response? result)
-          (let [cfg (parse-config-bytes result)]
+          (let [cfg (parse-config-bytes fw-line result)]
             (swap! state/*state assoc :config cfg :dirty false)
             (swap! state/*state assoc-in [:config :raw-config] result)
             (swap! state/*state assoc-in [:connection :config-status] :loaded)
-            (when (:need-confirmation cfg)
+            ; v1.5-only confirmation flow; legacy firmware never raises it
+            ; (parser hard-sets `:need-confirmation false`) so the gate doubles
+            ; as a fw capability check.
+            (when (and (model/fw-supports? fw-line :need-confirmation)
+                       (:need-confirmation cfg))
               (state/set-section! :sockets))
             (state/log! "Configuration loaded."))
           (state/log! "Read config: invalid response after retries"))))))
