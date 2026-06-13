@@ -65,6 +65,8 @@
   [status fw pcb]
   (swap! *state
          assoc :connection
-         {:status      status
-          :fw-version  fw
-          :pcb-version pcb}))
+         {:status        status
+          :fw-version    fw
+          :pcb-version   pcb
+          :fw-line       (fw-version->line fw)
+          :config-status :none}))
