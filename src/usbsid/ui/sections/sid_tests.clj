@@ -24,18 +24,22 @@
        :spacing     6
        :children
        [{:fx/type     :label
-         :text        "Run long-form tests to verify SID chip outputs."
+         :text        "Auto detect will run a full chip and SID type detection on both sockets. Then saves and applies the configuration, no reboot needed."
+         :style-class ["c64-label-dim" "c64-text-wrap"]}
+        {:fx/type     :button
+         :text        "START AUTO DETECT"
+         :on-action   {:event/type :auto-detect}
+         :disable     (not connected?)
+         :style-class "c64-button-primary"}
+        (w/c64-separator)
+        {:fx/type     :label
+         :text        "Run Chip or SID tests independently, output of these tests is set in the USBSID config but not applied, it is also printed via the uart debug port."
          :style-class "c64-label-dim"}
         {:fx/type     :h-box
          :style-class "c64-hbox"
          :spacing     6
          :children
          [{:fx/type     :button
-           :text        "START AUTO DETECT"
-           :on-action   {:event/type :auto-detect}
-           :disable     (not connected?)
-           :style-class "c64-button-primary"}
-          {:fx/type     :button
            :text        "DETECT SIDS"
            :on-action   {:event/type :detect-sids}
            :disable     (not connected?)
@@ -44,11 +48,7 @@
            :text        "DETECT CLONES"
            :on-action   {:event/type :detect-clones}
            :disable     (not connected?)
-           :style-class "c64-button"}]}
-
-        {:fx/type     :label
-         :text        "AUTO DETECT: detects chip + SID types, saves and applies. No reboot needed."
-         :style-class ["c64-label-dim" "c64-text-wrap"]}]}]}
+           :style-class "c64-button"}]}]}]}
 
     (w/c64-separator)
     (w/c64-header "SID TESTS")
@@ -61,23 +61,8 @@
        :spacing     6
        :children
        [{:fx/type     :label
-         :text        "Tests run on the board for a long time. Use STOP TESTS to interrupt."
+         :text        "These buttons start audio testing of SID('s) by testing each waveform/filter combination etc."
          :style-class ["c64-label-dim" "c64-text-wrap"]}
-
-        {:fx/type     :h-box
-         :style-class "c64-hbox"
-         :spacing     6
-         :children
-         [{:fx/type     :button
-           :text        "STOP TESTS"
-           :on-action   {:event/type :stop-tests}
-           :disable     (not connected?)
-           :style-class "c64-button-danger"}
-          {:fx/type     :button
-           :text        "TEST ALL"
-           :on-action   {:event/type :test-all-sids}
-           :disable     (not connected?)
-           :style-class "c64-button"}]}
 
         {:fx/type     :h-box
          :style-class "c64-hbox"
@@ -106,4 +91,23 @@
            :on-action   {:event/type :test-sid
                          :n          4}
            :disable     (not connected?)
-           :style-class "c64-button"}]}]}]}]})
+           :style-class "c64-button"}]}
+
+        {:fx/type     :h-box
+         :style-class "c64-hbox"
+         :spacing     6
+         :children
+         [{:fx/type     :button
+           :text        "TEST ALL"
+           :on-action   {:event/type :test-all-sids}
+           :disable     (not connected?)
+           :style-class "c64-button"}
+          {:fx/type     :button
+           :text        "STOP TESTS"
+           :on-action   {:event/type :stop-tests}
+           :disable     (not connected?)
+           :style-class "c64-button-danger"}]}
+
+        {:fx/type     :label
+         :text        "Tests can run on the board for a long time. Use STOP TESTS to interrupt."
+         :style-class ["c64-label-dim" "c64-text-wrap"]}]}]}]})

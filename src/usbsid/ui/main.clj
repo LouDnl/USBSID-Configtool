@@ -177,7 +177,7 @@
 
 (defn content-panel
   "Look at me, I can see you!"
-  [{:keys [active-section config connected? connection]}]
+  [{:keys [active-section config connected? connection hover-popup]}]
   {:fx/type      :scroll-pane
    :style-class  "c64-scroll-pane"
    :fit-to-width true
@@ -185,10 +185,10 @@
    :h-box/hgrow  :always
    :content
    (case active-section
-     :sockets   (s-sockets/sockets-section {:config config})
-     :clock     (s-clock/clock-section {:config config})
-     :leds      (s-leds/leds-section {:config config})
-     :features  (s-features/features-section {:config config :connection connection})
+     :sockets   (s-sockets/sockets-section {:config config :connection connection :hover-popup hover-popup})
+     :clock     (s-clock/clock-section {:config config :connection connection :hover-popup hover-popup})
+     :leds      (s-leds/leds-section {:config config :hover-popup hover-popup})
+     :features  (s-features/features-section {:config config :connection connection :hover-popup hover-popup})
      :sid-tests (s-tests/sid-tests-section {:connected? connected?})
      :debug     (s-debug/debug-section {:connected? connected?})
      :welcome   (s-welcome/about-section {:connection connection})
@@ -196,9 +196,39 @@
       :text        "Select a section"
       :style-class "c64-label"})})
 
+(defn- action-buttons
+  [connected? fw-line hover-popup]
+  (case fw-line
+    (:legacy :unknown)
+    [(common/buttons :read {:hover-popup hover-popup
+                            :connected?  connected?})
+     (common/buttons :write {:hover-popup hover-popup
+                             :connected?  connected?})
+     (common/buttons :apply {:hover-popup hover-popup
+                             :connected?  connected?})
+     {:fx/type     :pane
+      :h-box/hgrow :always}
+     (common/buttons :save {:hover-popup hover-popup
+                            :connected?  connected?})
+     (common/buttons :save-reboot {:hover-popup hover-popup
+                                   :connected?  connected?})
+     (common/buttons :reload-flash {:hover-popup hover-popup
+                                    :connected?  connected?})]
+    ; else :v0_7+
+    [(common/buttons :read {:hover-popup hover-popup
+                            :connected?  connected?})
+     {:fx/type     :pane
+      :h-box/hgrow :always}
+     (common/buttons :save {:hover-popup hover-popup
+                            :connected?  connected?})
+     (common/buttons :save-reboot {:hover-popup hover-popup
+                                   :connected?  connected?})
+     (common/buttons :reload-flash {:hover-popup hover-popup
+                                    :connected?  connected?})]))
+
 (defn action-bar
   "Are you getting any!?"
-  [{:keys [connected? hover-popup]}]
+  [{:keys [connected? fw-line hover-popup]}]
   {:fx/type :v-box
    :spacing 0
    :padding {:top    3
@@ -213,25 +243,7 @@
                    :bottom 2
                    :left   8}
      :spacing     6
-     :children
-     [(common/buttons :read {:hover-popup hover-popup
-                             :connected?  connected?})
-      (common/buttons :write {:hover-popup hover-popup
-                              :connected?  connected?})
-      (common/buttons :apply {:hover-popup hover-popup
-                              :connected?  connected?})
-      {:fx/type     :pane
-       :h-box/hgrow :always}
-      (common/buttons :yolo {:hover-popup hover-popup
-                             :connected?  connected?})
-      {:fx/type     :pane
-       :h-box/hgrow :always}
-      (common/buttons :save {:hover-popup hover-popup
-                             :connected?  connected?})
-      (common/buttons :save-reboot {:hover-popup hover-popup
-                                    :connected?  connected?})
-      (common/buttons :reload-flash {:hover-popup hover-popup
-                                     :connected?  connected?})]}
+     :children (action-buttons connected? fw-line hover-popup)}
     {:fx/type     :h-box
      :style-class "c64-hbox"
      :padding     {:top    2
@@ -327,10 +339,12 @@
                    (content-panel {:active-section active-section
                                    :config         config
                                    :connected?     connected?
-                                   :connection     connection})]}
+                                   :connection     connection
+                                   :hover-popup    hover-popup})]}
        :bottom
        {:fx/type  :v-box
         :spacing  0
         :children [(action-bar {:connected?  connected?
+                                :fw-line     (:fw-line connection)
                                 :hover-popup hover-popup})
                    (log-panel {:log log})]}}}}))

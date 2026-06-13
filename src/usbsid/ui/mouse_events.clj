@@ -38,10 +38,12 @@
      :button       - button prop map without :fx/type (text/style-class/on-action/etc.)"
   [{:keys [hover-popup popup-key popup-text button]}]
   (let [show?   (= hover-popup popup-key)
-        trigger (assoc button
-                       :fx/type :button
-                       :on-mouse-entered {:event/type :popup-show :key popup-key}
-                       :on-mouse-exited  {:event/type :popup-hide :key popup-key})]
+        ;; Preserve caller's :fx/type (toggle-button has :selected,
+        ;; plain :button doesn't). Default to :button when caller omits.
+        trigger (-> button
+                    (update :fx/type #(or % :button))
+                    (assoc  :on-mouse-entered {:event/type :popup-show :key popup-key}
+                            :on-mouse-exited  {:event/type :popup-hide :key popup-key}))]
     {:fx/type fx/ext-let-refs
      :refs    {::trigger trigger}
      :desc    {:fx/type fx/ext-let-refs
