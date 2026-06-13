@@ -177,6 +177,13 @@
     :kv      {}}
    lines))
 
+(defn ini->version
+  "Extract the firmware version string from an INI's `[General] version = ...`
+   line, or nil if missing. Used to flag cross-version imports."
+  [ini-str]
+  (let [{:keys [kv]} (parse-ini-lines (string/split-lines ini-str))]
+    (get-in kv ["General" "version"])))
+
 (defn ini->config
   "Parses INI string into partial config map.
    Merges over base-config to preserve fields not present in INI (e.g. FMOpl sidno)."
