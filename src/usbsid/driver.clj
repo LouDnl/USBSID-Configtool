@@ -495,6 +495,35 @@
       (reset! drv-atom nil)
       (state/log! "Disconnected."))))
 
+(defn set-config!
+  "Set (write) a single config item directly on change fw v0.7+ only"
+  [path value]
+  (with-driver "Set config"
+    (fn []
+      (let [cfgitem         (cond-> {}
+                              (= (count path) 1)
+                              (assoc (first path) value)
+                              (= (count path) 2)
+                              (assoc-in [(first path)
+                                         (second path)]
+                                        value)
+                              (= (count path) 3)
+                              (assoc-in [(first path)
+                                         (second path)
+                                         (last path)]
+                                        value)
+                              :always
+                              (assoc :singles true))
+            commandlocation (get config-path->command-id path)
+            cfgvec          (config->commands* :v0_7 cfgitem)
+            [a b c]         (nth cfgvec commandlocation)]
+        (try
+          (state/log! (str "Set configuration item: " (dissoc cfgitem :singles)))
+          (set-cfg {:a a :b b :c c})
+          (catch Exception e
+            (state/log! (format "send-config! error [0x%X 0x%X 0x%X]: %s" a b c (.getMessage e)))
+            (throw e)))))))
+
 (defn write-config!
   "Write the current configuration to USBSID-Pico"
   []
