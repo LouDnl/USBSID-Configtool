@@ -12,6 +12,7 @@
 # And all these filetypes
 !*.clj
 !*.bb
+!*.ini
 
 # Certainly not these directories
 !.github
@@ -19,6 +20,7 @@
 !assets
 !assets/driver
 !assets/lib
+!example-configs
 !images
 !resources
 !scripts
