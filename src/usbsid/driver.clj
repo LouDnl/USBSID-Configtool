@@ -363,14 +363,45 @@
        (= (Byte/toUnsignedInt (aget b 1))  0x7F)
        (= (Byte/toUnsignedInt (aget b 63)) 0xFF)))
 
+(defn- valid-config-slice?
+  "True if the given byte-array slice [off..off+63] is a valid READ_CONFIG
+   response: initiator 0x30, verification 0x7F, terminator 0xFF at off+63."
+  [^bytes buf off]
+  (and (<= (+ off 64) (alength buf))
+       (= (Byte/toUnsignedInt (aget buf off))         0x30)
+       (= (Byte/toUnsignedInt (aget buf (+ off 1)))   0x7F)
+       (= (Byte/toUnsignedInt (aget buf (+ off 63)))  0xFF)))
+
 (defn- do-read-config
-  "Reads the complete configuration and returns a Byte array"
-  []
-  (.USBSID_rwconfigcommand
-   @drv-atom
-   (bit-and (.get Config$Cfg/READ_CONFIG) 0xff)
-   (int 64)
-   (into-array Byte [(byte 0)])))
+  "Read the complete configuration and return a 64-byte Byte array.
+   v0.7+ firmware sends a single 64-byte packet. v0.5/v0.6 firmware
+   (`config.c` `case READ_CONFIG`) loops `write_back_data(64)` four times,
+   sending 4 × 64-byte packets back-to-back. The valid header is in the
+   FIRST packet but the host's IN endpoint can deliver them in any order
+   depending on URB queueing - if the host reads only one 64-byte URB it
+   may land on the trailing zero packet and the parsed config silently
+   reads as all zeroes. Drain the full 4-packet window on legacy boards
+   and scan 64-byte slices for the valid `[0x30 0x7F ... 0xFF]` header."
+  [fw-line]
+  (let [read-len (if (= fw-line :legacy) 256 64)
+        result   (.USBSID_rwconfigcommand
+                  @drv-atom
+                  (bit-and (.get Config$Cfg/READ_CONFIG) 0xff)
+                  (int read-len)
+                  (into-array Byte [(byte 0)]))]
+    (cond
+      (nil? result)           result
+      (= (alength result) 64) result
+      :else
+      (let [off (->> (range 0 (- (alength result) 63) 64)
+                     (filter (partial valid-config-slice? result))
+                     first)]
+        (if off
+          (java.util.Arrays/copyOfRange ^bytes result (int off) (int (+ off 64)))
+          ; No valid slice found - return first 64 bytes so the
+          ; valid-config-response? guard in read-config! reports a clean
+          ; "invalid response after retries" instead of a silent zeroed config.
+          (java.util.Arrays/copyOfRange ^bytes result 0 64))))))
 
 (defn- do-read-pcbversion
   "Read, verify and return PCB version"
