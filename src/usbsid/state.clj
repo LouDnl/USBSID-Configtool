@@ -4,8 +4,25 @@
    [clojure.java.io :as io]
    [clojure.string :refer [trim-newline]]
    [usbsid.config-model :as model]
-   [usbsid.logging :refer [logger]]))
-
+(defn fw-version->line
+  "Map a firmware version string to a config-schema branch keyword.
+   v0.5.x / v0.6.x firmware share one byte layout (`:legacy`).
+   v0.7+ firmware uses the current layout (`:v0_7`).
+   Anything unparsable assumes the newest schema (`:unknown`) since older
+   boards are the minority. Returns one of #{:legacy :v0_7 :unknown}."
+  [fw]
+  (or (when (string? fw)
+        (when-let [[_ maj min upd] (re-find #"^v?(\d+)\.(\d+)\.(\d+)" fw)]
+          (let [M (Long/parseLong maj)   ; major
+                m (Long/parseLong min)   ; minor
+                _u (Long/parseLong upd)] ; update
+            (cond
+              (and (zero? M) (<= m 6))  :legacy ; 0.1.0 ~  0.6.4
+              (or
+               (and (zero? M) (>= m 7))
+               (and (>= M 1) (>= m 7))) :v0_7 ; 0.7.0+
+              :else                     :unknown)))) ; usually when not connected
+      :unknown)) ; usually when not connected
 
 (def initial-state
   {:connection     {:status        :disconnected
