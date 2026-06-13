@@ -22,14 +22,14 @@ Download from https://github.com/LouD/USBSID-Pico-Configtool/releases
 
 ## Supported platforms
 All including (driver/javafx) formats:  
-Linux -> `USBSID-Pico-Configtool-0.2.0-x86_64.AppImage`  
-Linux -> `USBSID-Pico-Configtool-0.2.0-linux.zip`  
-Windows -> `USBSID-Pico-Configtool-0.2.0-windows.msi`  
-MacOs Apple silicon -> `USBSID-Pico-Configtool-0.2.0-macos-aarch64.dmg`  
-MacOs Intel -> `USBSID-Pico-Configtool-0.2.0-macos-x86_64.dmg`  
+Linux -> `USBSID-Pico-Configtool-x.x.x-x86_64.AppImage`  
+Linux -> `USBSID-Pico-Configtool-x.x.x-linux.zip`  
+Windows -> `USBSID-Pico-Configtool-x.x.x-windows.msi`  
+MacOs Apple silicon -> `USBSID-Pico-Configtool-x.x.x-macos-aarch64.dmg`  
+MacOs Intel -> `USBSID-Pico-Configtool-x.x.x-macos-x86_64.dmg`  
 
 Java JAR file without driver and javafx:  
-All platforms (Java JAR) -> `usbsid-configtool-0.2.0.jar` + `run.sh` or `run.bat` 
+All platforms (Java JAR) -> `usbsid-configtool-x.x.x.jar` + `run.sh` or `run.bat` 
 
 ## Options
 - Pre defined socket configurations
