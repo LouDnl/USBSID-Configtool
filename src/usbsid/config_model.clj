@@ -1,5 +1,34 @@
 (ns usbsid.config-model
-  "USBSID-Pico config options")
+  "USBSID-Pico config options"
+  (:require
+   [clojure.string :refer [join split]]))
+
+
+(defn deep-merge
+  "Merge submap items with submap items"
+  [a b]
+  (if (and (map? a) (map? b))
+    (merge-with deep-merge a b)
+    b))
+
+(defn parse-pcb-version
+  "PCB version string to integer"
+  [pcbver]
+  (if (string? pcbver)
+    (Long/parseLong (join "" (split pcbver #"\.")))
+    999))
+
+(defn parse-fw-version
+  "Firmware version string to integer"
+  [fwver]
+  (if (string? fwver)
+    (-> fwver
+        (clojure.string/split  #"-")
+        first
+        (clojure.string/split  #"\.")
+        (#(clojure.string/join "" %))
+        (Long/parseLong))
+    0))
 
 (def clock-rates
   [{:key :default :label "DEFAULT (1.000 MHz)" :value 1000000 :id 0}
@@ -31,6 +60,80 @@
 
 (def chip-type-by-key
   (into {} (map (fn [c] [(:key c) c]) chip-types)))
+
+(comment
+  "For reference only"
+  "Legacy (v0.5.x / v0.6.x firmware) chiptype + clonetype enums."
+  "Firmware split chip class (real/clone/unknown) and clone subtype across"
+  "two bytes (config_array bytes 12+13 / 23+24). v0.7+ collapsed them into"
+  "the single flat `chip-types` enum above"
+
+  (def legacy-chiptypes
+    [{:key :real    :id 0}
+     {:key :clone   :id 1}
+     {:key :unknown :id 2}])
+
+  (def legacy-clonetypes
+    [{:key :disabled :id 0}
+     {:key :other    :id 1}
+     {:key :skpico   :id 2}
+     {:key :armsid   :id 3}
+     {:key :fpgasid  :id 4}
+     {:key :redipsid :id 5}])
+
+  "Forward map: legacy {chiptype-id, clonetype-id} -> v0.7 flat chip-types :key."
+  "Used when reading a config from a legacy board into the unified UI model."
+  "- chiptype=0 (real) collapses to :real regardless of clonetype."
+  "- chiptype=2 (unknown) -> :unknown."
+  "- chiptype=1 (clone) is dispatched by clonetype: disabled/other -> :unknown"
+  "(no flat key for \"clone-but-unspecified\") the rest map to their named keys."
+  )
+
+(defn legacy->flat-chip
+  "Combine legacy {chiptype, clonetype} byte values into a v0.7 flat chip-types :key."
+  [chiptype clonetype]
+  (case (int chiptype)
+    0 :real
+    2 :unknown
+    1 (case (int clonetype)
+        2 :skpico
+        3 :armsid
+        4 :fpgasid
+        5 :redipsid
+        :unknown) ; disabled / other / out-of-range
+    :unknown))
+
+(comment
+  "Reverse map: v0.7 flat :key -> legacy {chiptype, clonetype} bytes."
+  "Returns nil for keys that have no legacy equivalent (`:arm2sid` / `:pdsid` /"
+  "`:backsid` / `:sidemu`) writer must drop+log those."
+  )
+(def flat-chip->legacy
+  {:real     {:chiptype 0 :clonetype 0}
+   :unknown  {:chiptype 2 :clonetype 0}
+   :skpico   {:chiptype 1 :clonetype 2}
+   :armsid   {:chiptype 1 :clonetype 3}
+   :fpgasid  {:chiptype 1 :clonetype 4}
+   :redipsid {:chiptype 1 :clonetype 5}})
+
+(defn legacy-supports-chip?
+  "True if the given flat chip-types :key has a legacy {chiptype, clonetype} mapping."
+  [chip-key]
+  (contains? flat-chip->legacy chip-key))
+
+(comment
+ "Per-firmware capability set. UI consults this to grey out controls the"
+ "connected firmware does not understand")
+(def fw-capabilities
+  {:legacy #{:clock :sockets :led :rgb :fmopl :stereo :audio-sw :mirrored}
+   :v0_7   #{:clock :sockets :led :rgb :fmopl :stereo :audio-sw :mirrored
+             :flipped :mixed :need-confirmation :disable-changedetect}})
+
+(defn fw-supports?
+  "True if the given firmware line exposes the given capability keyword."
+  [fw-line capability]
+  (contains? (get fw-capabilities fw-line (:v0_7 fw-capabilities))
+             capability))
 
 (def sid-types
   [{:key :unknown :label "Unknown" :id 0}
