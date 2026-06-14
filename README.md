@@ -53,7 +53,6 @@ All platforms (Java JAR) -> `usbsid-configtool-x.x.x.jar` + `run.sh` or `run.bat
 ![Welcome screen <= v0.6.4](images/screenshot-linux-1.png)
 
 ### Bugs
-- MacOs not working yet, working on it!
 - Many, probably! Please report any via the issues page!
 
 ## Fonts
