@@ -1,9 +1,12 @@
 (ns usbsid.sid.fpgasid
   (:require
-  ;;  [usbsid.events :as events]
+   ;;  [usbsid.events :as events]
    [usbsid.state :as state]
    [usbsid.sid.chip :as chip]
    [usbsid.driver :as driver]))
+
+
+;;; Config variables
 
 (def slots ["A", "B"])
 (def extinsource
@@ -25,6 +28,9 @@
   {"stereo"   "dual output over SID1 (socket) & SID2 (external) channels",
    "mono mix" "dual output over SID1 channel (mixed)"})
 (def sid2addr ["$d400", "$de00", "$d500", "$d420", ""])
+
+
+;;; Development functions
 
 (defn- printsidcfg
   [{:keys [slot
@@ -97,16 +103,24 @@
     (printsidcfg sid3)
     (printsidcfg sid4)))
 
+
+;;; States
+
 (def config-buffer (atom nil))
 
+(def config-read (atom false)) ; ISSUE: State is not cleared on disconnect, move to -> state? or events?
+
+(def fpgasid-config (atom {}))
+
+
 ;;; Development test buffer
+
 (def dev-buffer
   (byte-array [-91, 127, -11, 29, 5, 10, 20, 20, 0, 0, 0, 0, 3, 45, -128, -104, 2, 20, -119, -1, 101, 0, 82, 20, 1, -33, 101, 0, 82,
                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -113, -1]))
 
-; ISSUE: State is not cleared on disconnect, move to -> state? or events?
-(def config-read (atom false))
-(def fpgasid-config (atom {}))
+
+;;; Parsing and conversion
 
 (defn parse-read-buffer
   "parse usbsid bytearray to fpgasid config"
@@ -255,6 +269,9 @@
 (defn config-to-buffer
   "convert fpgasid config to usbsid bytearray"
   [])
+
+
+;;; Reading
 
 (defn read-fpgasid-configuration
   [addr]
