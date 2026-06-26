@@ -26,6 +26,7 @@
 !scripts
 !src
 !src/usbsid
+!src/usbsid/sid
 !src/usbsid/ui
 !src/usbsid/ui/sections
 !test
