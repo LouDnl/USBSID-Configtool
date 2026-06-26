@@ -435,6 +435,27 @@
 
 (defn connected? [] (USBSIDDevice/isOpen))
 
+(defn read-config-command
+  "Read from USBSID config after a write config command"
+  [cmd & {:keys [a b c d]
+          :or   {a 0 b 0 c 0 d 0}}]
+  (let [result (.USBSID_rwconfigcommand
+                @drv-atom
+                cmd
+                (int 64)
+                (into-array Byte [(cfg-byte a) (cfg-byte b) (cfg-byte c) (cfg-byte d)]))]
+    result
+    #_(cond
+        (nil? result)           result
+        (= (alength result) 64) result
+        :else
+        (let [off (->> (range 0 (- (alength result) 63) 64)
+                       (filter (partial valid-config-slice? result))
+                       first)]
+          (if off
+            (java.util.Arrays/copyOfRange ^bytes result (int off) (int (+ off 64)))
+            (java.util.Arrays/copyOfRange ^bytes result 0 64))))))
+
 (defn read-config!
   "Read USBSID-Pico configuration. Dispatch parser on connected board's
    firmware-line so v0.5/v0.6 boards get the legacy byte map (PROJECT.md §9.0)."
