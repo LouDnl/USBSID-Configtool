@@ -34,7 +34,9 @@
                     :fw-version    nil
                     :pcb-version   nil
                     :fw-line       :unknown
-                    :config-status :none}
+                    :config-status :none
+                    :chipone       :unknown
+                    :chiptwo       :unknown}
    :config         model/initial-config
    :active-section :welcome
    :log            [(format
@@ -77,4 +79,6 @@
           :fw-version    fw
           :pcb-version   pcb
           :fw-line       (fw-version->line fw)
-          :config-status :none}))
+          :config-status :none
+          :chipone       :unknown
+          :chiptwo       :unknown}))

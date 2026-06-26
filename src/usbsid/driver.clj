@@ -470,6 +470,8 @@
             (swap! state/*state assoc :config cfg :dirty false)
             (swap! state/*state assoc-in [:config :raw-config] result)
             (swap! state/*state assoc-in [:connection :config-status] :loaded)
+            (swap! state/*state assoc-in [:connection :chipone] (get-in cfg [:socket-one :chiptype]))
+            (swap! state/*state assoc-in [:connection :chiptwo] (get-in cfg [:socket-two :chiptype]))
             ; v1.5-only confirmation flow; legacy firmware never raises it
             ; (parser hard-sets `:need-confirmation false`) so the gate doubles
             ; as a fw capability check.
