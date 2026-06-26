@@ -46,7 +46,10 @@
                          :value            (get-in model/chip-type-by-key [(:chiptype socket) :label])
                          :on-value-changed (fn [v]
                                              (when-let [ct (first (filter (comp #{v} :label) chip-types))]
-                                               (events/config-changed! [socket-key :chiptype] (:key ct))))})
+                                               (try
+                                                 (events/config-changed! [socket-key :chiptype] (:key ct))
+                                                 (when connected? (events/chiptype-changed! socket-key (:key ct)))
+                                                 (catch Exception e e))))})
       (if (and (not= fw-line :legacy) connected?)
         (w/c64-narrow-row "Chip voltage"
                           {:fx/type     :label
