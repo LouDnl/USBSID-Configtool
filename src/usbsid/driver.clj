@@ -590,7 +590,8 @@
       (swap! state/*state assoc-in [:connection :config-status] :applied)
       (state/log! "Configuration applied."))))
 
-(defn reload-config! []
+(defn reload-config!
+  []
   (with-driver "Reload config"
     (fn []
       (state/log! "Reloading configuration from flash")
