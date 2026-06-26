@@ -16,11 +16,11 @@
 
 ;;; Byte helpers
 
-(defn- b->int [b] (Byte/toUnsignedInt b))
+(defn b->int [b] (Byte/toUnsignedInt b))
 
-(defn- ba-get [^bytes arr i] (b->int (aget arr i)))
+(defn ba-get [^bytes arr i] (b->int (aget arr i)))
 
-(defn- cfg-byte [v] (unchecked-byte (bit-and v 0xff)))
+(defn cfg-byte [v] (unchecked-byte (bit-and v 0xff)))
 
 (defn- sid-addr [id]
   (case (int id) 0 0x00, 1 0x20, 2 0x40, 3 0x60, 0xFF))
