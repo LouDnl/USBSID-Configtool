@@ -167,3 +167,18 @@
      :wrap-text   false
      :min-width   200}
     widget]})
+
+(defn c64-smol-row
+  "Two-column label+widget row."
+  [label widget
+   & {:keys [min-width]
+      :or {min-width 10}}]
+  {:fx/type     :h-box
+   :style-class "c64-hbox"
+   :children
+   [{:fx/type     :label
+     :text        label
+     :style-class "c64-label"
+     :wrap-text   false
+     :min-width   min-width}
+    widget]})
