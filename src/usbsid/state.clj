@@ -70,6 +70,11 @@
               (assoc-in (into [:config] path) value)
               (assoc :dirty true))))
 
+(defn set-chiptype!
+  "Change the chiptype for extra panels"
+  [chipkey value]
+  (swap! *state assoc-in [:connection chipkey] value))
+
 (defn set-connection!
   "Update connection status"
   [status fw pcb]
