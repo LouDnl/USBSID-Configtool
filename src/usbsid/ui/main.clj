@@ -4,7 +4,7 @@
    [cljfx.api :as fx]
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [usbsid.state :refer [log!]]
+   [usbsid.state :as state :refer [log!]]
    [usbsid.ui.css :as css]
    [usbsid.ui.sections.common :as common]
    [usbsid.ui.sections.sockets :as s-sockets]
@@ -14,6 +14,7 @@
    [usbsid.ui.sections.sid-tests :as s-tests]
    [usbsid.ui.sections.debug :as s-debug]
    [usbsid.ui.sections.welcome :as s-welcome]
+   [usbsid.ui.sections.fpgasid :as s-fpgasid]
    [usbsid.window-prefs :as w-prefs])
   (:import
    [javafx.application Platform]
@@ -37,6 +38,15 @@
    {:key :features  :label "FEATURES"}
    {:key :sid-tests :label "SID TESTS"}
    {:key :debug     :label "DEBUG"}])
+
+(def sid-nav-items
+  [{:key :fpgasid   :label "FPGASID"}
+   #_{:key :armsid    :label "ARMSID"}
+   #_{:key :arm2sid   :label "ARM2SID"}
+   #_{:key :pdsid     :label "PDSID"}
+   #_{:key :skpico    :label "SKPICO"}
+   #_{:key :backsid   :label "BACKSID"}
+   #_{:key :sidemu    :label "SIDEMU"}])
 
 (defn- logo-image
   "Well what do you think it is?"
@@ -164,7 +174,7 @@
 
 (defn nav-panel
   "We navigate the stars together!"
-  [{:keys [active-section]}]
+  [{:keys [active-section connection]}]
   {:fx/type     :v-box
    :style-class "c64-nav"
    :spacing     0
@@ -177,7 +187,13 @@
             :style-class (if (= key active-section)
                            ["c64-nav-item" "c64-nav-item-active"]
                            "c64-nav-item")})
-         nav-items)})
+         (into
+          nav-items
+          (if (:dev-nonce @state/*state) ; TODO: Remove after finishing
+            sid-nav-items ; TODO: Remove after finishing
+            (filter ; TODO: Re-enable after removing the above
+             (comp (set (vals (select-keys connection [:chipone :chiptwo]))) :key)
+             sid-nav-items))))})
 
 (defn content-panel
   "Look at me, I can see you!"
@@ -203,6 +219,9 @@
      :sid-tests (s-tests/sid-tests-section {:connected? connected?})
      :debug     (s-debug/debug-section {:connected? connected?})
      :welcome   (s-welcome/about-section {:connection connection})
+     :fpgasid   (s-fpgasid/fpgasid-section {:config      config
+                                            :connection  connection
+                                            :hover-popup hover-popup})
      {:fx/type     :label
       :text        "Select a section"
       :style-class "c64-label"})})
@@ -346,7 +365,8 @@
                      connected?) (conj (warning-banner)))}
        :center
        {:fx/type  :h-box
-        :children [(nav-panel {:active-section active-section})
+        :children [(nav-panel {:active-section active-section
+                               :connection     connection})
                    (content-panel {:active-section active-section
                                    :config         config
                                    :connected?     connected?
