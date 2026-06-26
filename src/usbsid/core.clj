@@ -26,6 +26,7 @@
    :active-section (:active-section s)
    :log            (:log s)
    :dirty          (:dirty s)
+   :app-nonce      (:app-nonce s 0)
    :hover-popup    (:hover-popup s)})
 
 (def renderer (atom nil))

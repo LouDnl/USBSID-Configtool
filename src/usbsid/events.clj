@@ -4,7 +4,8 @@
    [usbsid.config-model :as model]
    [usbsid.state :as state]
    [usbsid.driver :as driver]
-   [usbsid.ini-io :as ini-io])
+   [usbsid.ini-io :as ini-io]
+   [usbsid.logging :refer [severe]])
   (:import
    [javafx.stage FileChooser FileChooser$ExtensionFilter]))
 
@@ -18,6 +19,12 @@
 
 (defmethod handle :navigate [{:keys [section]}]
   (state/set-section! section))
+
+(defmethod handle :refresh [_]
+  (try
+    (swap! state/*state update :app-nonce (fnil inc 0))
+    (catch Exception e
+      (severe (str "Exception during dev/refresh-app: " (.getMessage e)) e))))
 
 (defmethod handle :config-changed [{:keys [path value]}]
   (when
