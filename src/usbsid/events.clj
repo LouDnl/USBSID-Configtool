@@ -173,3 +173,7 @@
   (handle {:event/type :config-changed
            :path path
            :value value}))
+
+(defn chiptype-changed!
+  [socketkey value]
+  (state/set-chiptype! (if (= socketkey :socket-one) :chipone :chiptwo) value))
