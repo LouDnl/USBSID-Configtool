@@ -87,7 +87,7 @@
         :spacing 2
         :children
         [{:fx/type     :label
-          :text        " USBSID-Pico Configuration Tool" ; ISSUE: This is not neatly ligned out yet
+          :text        " USBSID-Configuration Tool" ; ISSUE: This is not neatly ligned out yet
           :style-class "c64-title-text"}
          {:fx/type     :label
           :text        (format "  v%s | %s | %s"
@@ -332,7 +332,7 @@
         need-confirm? (get config :need-confirmation false)]
     {:fx/type  :stage
      :showing  true
-     :title    "USBSID-Pico Config Tool"
+     :title    "USBSID-Configtool"
      :on-close-request (fn [_]
                          #_(.fine @logging/logger "> Application is set to close")
                          (log! "Application is set to close")

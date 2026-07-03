@@ -181,19 +181,19 @@ jobs:
           mkdir -p staging
 
           if [ "${{ matrix.platform }}" = "linux" ]; then
-            (cd target/package && zip -r "../../staging/USBSID-Pico-Configtool-${VERSION}-linux.zip" USBSID-Pico-Configtool/)
+            (cd target/package && zip -r "../../staging/USBSID-Configtool-${VERSION}-linux.zip" USBSID-Configtool/)
 
           elif [ "${{ matrix.platform }}" = "linux-appimage" ]; then
             cp target/appimage/*.AppImage staging/
 
           elif [ "${{ matrix.platform }}" = "windows" ]; then
-            cp target/package/*.msi "staging/USBSID-Pico-Configtool-${VERSION}-windows.msi"
+            cp target/package/*.msi "staging/USBSID-Configtool-${VERSION}-windows.msi"
 
           elif [ "${{ matrix.platform }}" = "macos-intel" ]; then
-            cp target/package/*.dmg "staging/USBSID-Pico-Configtool-${VERSION}-macos-x86_64.dmg"
+            cp target/package/*.dmg "staging/USBSID-Configtool-${VERSION}-macos-x86_64.dmg"
 
           elif [ "${{ matrix.platform }}" = "macos-arm" ]; then
-            cp target/package/*.dmg "staging/USBSID-Pico-Configtool-${VERSION}-macos-aarch64.dmg"
+            cp target/package/*.dmg "staging/USBSID-Configtool-${VERSION}-macos-aarch64.dmg"
           fi
 
       - name: Upload platform artifact

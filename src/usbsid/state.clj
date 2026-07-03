@@ -40,7 +40,7 @@
    :config         model/initial-config
    :active-section :welcome
    :log            [(format
-                     "USBSID-Pico Config Tool v%s"
+                     "USBSID-Configtool v%s"
                      (trim-newline (slurp (io/resource ".version"))))]
    :dirty          false
    :hover-popup    nil})

@@ -1,5 +1,5 @@
 ![USBSID-Pico](resources/usbsid-logo.png)
-# USBSID-Pico Configtool
+# USBSID-Configtool
 
 This repo contains the graphical configuration tool for USBSID-Pico.  
 It exists as supplement and next to the [command line config](https://github.com/LouDnl/USBSID-Pico/tree/master/examples/config-tool) tool and [web configtool](https://usbsid.loudai.nl).  
@@ -18,15 +18,15 @@ Due to breaking changes in the way the socket values are handled, I advise upgra
 These changes are visual only for pcb v1.3 and lower, but required for pcb v1.4 and higher due to voltage configuration.  
 
 ## Installation
-Download from https://github.com/LouD/USBSID-Pico-Configtool/releases
+Download from https://github.com/LouD/USBSID-Configtool/releases
 
 ## Supported platforms
 All including (driver/javafx) formats:  
-Linux -> `USBSID-Pico-Configtool-x.x.x-x86_64.AppImage`  
-Linux -> `USBSID-Pico-Configtool-x.x.x-linux.zip`  
-Windows -> `USBSID-Pico-Configtool-x.x.x-windows.msi`  
-MacOs Apple silicon -> `USBSID-Pico-Configtool-x.x.x-macos-aarch64.dmg`  
-MacOs Intel -> `USBSID-Pico-Configtool-x.x.x-macos-x86_64.dmg`  
+Linux -> `USBSID-Configtool-x.x.x-x86_64.AppImage`  
+Linux -> `USBSID-Configtool-x.x.x-linux.zip`  
+Windows -> `USBSID-Configtool-x.x.x-windows.msi`  
+MacOs Apple silicon -> `USBSID-Configtool-x.x.x-macos-aarch64.dmg`  
+MacOs Intel -> `USBSID-Configtool-x.x.x-macos-x86_64.dmg`  
 
 Java JAR file without driver and javafx:  
 All platforms (Java JAR) -> `usbsid-configtool-x.x.x.jar` + `run.sh` or `run.bat` 

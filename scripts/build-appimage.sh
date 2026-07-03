@@ -2,7 +2,7 @@
 # Build a Linux AppImage from the jpackage app-image output.
 #
 # Prerequisites:
-#  - Run 'clj -T:build package' first (creates target/package/USBSID-Pico-Configtool/)
+#  - Run 'clj -T:build package' first (creates target/package/USBSID-Configtool/)
 #  - curl must be available
 #  - appimagetool is auto-downloaded if absent
 #
@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-APP_NAME="USBSID-Pico-Configtool"
+APP_NAME="USBSID-Configtool"
 VERSION=$(cat resources/.version | tr -d '[:space:]')
 ARCH=$(uname -m)   # x86_64 or aarch64
 
@@ -43,17 +43,17 @@ cp -r "${JPACKAGE_SRC}/." "$APP_DIR/"
 cat > "${APP_DIR}/AppRun" << 'APPRUN'
 #!/bin/sh
 SELF_DIR="$(dirname "$(readlink -f "$0")")"
-exec "${SELF_DIR}/bin/USBSID-Pico-Configtool" "$@"
+exec "${SELF_DIR}/bin/USBSID-Configtool" "$@"
 APPRUN
 chmod +x "${APP_DIR}/AppRun"
 
 # .desktop entry (required by AppImage spec)
 cat > "${APP_DIR}/${APP_NAME}.desktop" << DESKTOP
 [Desktop Entry]
-Name=USBSID-Pico Configtool
+Name=USBSID-Configtool
 Comment=Configuration tool for USBSID-Pico boards
-Exec=USBSID-Pico-Configtool
-Icon=USBSID-Pico-Configtool
+Exec=USBSID-Configtool
+Icon=USBSID-Configtool
 Type=Application
 Categories=Utility;Electronics;
 DESKTOP

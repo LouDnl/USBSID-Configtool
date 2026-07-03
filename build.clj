@@ -9,7 +9,7 @@
 (def lib        'org.clojars.loud/usbsid-configtool)
 (def version    (string/trim-newline (slurp "resources/.version")))
 (def main       'usbsid.core)
-(def app-name   "USBSID-Pico-Configtool")
+(def app-name   "USBSID-Configtool")
 (def class-dir  "target/classes")
 (def uber-file  (format "target/%s-%s.jar" (name lib) version))
 
@@ -236,7 +236,7 @@
                                  "--main-jar"       jar-name
                                  "--main-class"     "usbsid.core"
                                  "--vendor"         "LouD"
-                                 "--description"    "USBSID-Pico Configuration Tool"
+                                 "--description"    "USBSID-Configuration Tool"
                                  "--copyright"      "Copyright 2024-2026 LouD, GPLv2"]
                                 (mapcat #(vector "--java-options" %) jpackage-opts))
                          (and icon (.exists (File. ^String icon))) (into ["--icon" icon])
@@ -266,7 +266,7 @@
                       "--app-version"   ver
                       "--dest"          dest
                       "--vendor"        "LouD"
-                      "--description"   "USBSID-Pico Configuration Tool"
+                      "--description"   "USBSID-Configuration Tool"
                       "--copyright"     "Copyright 2024-2026 LouD, GPLv2"])
           (println (str "Package created in " dest "/")))
         ; Non-mac: single jpackage call as before.
