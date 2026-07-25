@@ -207,4 +207,4 @@
                        :style-class "c64-toggle"}
                       {:hover-popup hover-popup
                        :hover-text  "Disable detection of changes in the sockets on boot. Effectively overriding any voltage settings!"
-                       :popup-key   [:stereo :locked]}))]}]}]}))
+                       :popup-key   [:detection :locked]}))]}]}]}))
