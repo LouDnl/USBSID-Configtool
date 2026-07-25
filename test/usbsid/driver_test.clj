@@ -160,8 +160,8 @@
 ; config->commands tests
 
 (deftest commands-count
-  (testing "always emits 25 SET_CONFIG commands"
-    (is (= 25 (count (driver/config->commands model/initial-config))))))
+  (testing "always emits 26 SET_CONFIG commands"
+    (is (= 26 (count (driver/config->commands model/initial-config))))))
 
 (deftest commands-clock-pal
   (let [cfg   (assoc model/initial-config :clock-rate :pal :lock-clockrate false)
