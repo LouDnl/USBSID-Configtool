@@ -179,7 +179,8 @@
                    "READ CONFIG:\nread the active configuration from USBSID ram into the configtool."
                    {:fx/type     :button
                     :text        "READ CFG"
-                    :on-action   {:event/type :read-config}
+                    :on-action   {:event/type :read-config
+                                  :key        button}
                     :disable     (not connected?)
                     :wrap-text   true
                     :style-class "c64-button"})
@@ -189,7 +190,8 @@
                    "WRITE CONFIG:\nwrite the configtool configuration to USBSID ram. An apply or save is needed after writing to activate the configuration."
                    {:fx/type     :button
                     :text        "WRITE CFG"
-                    :on-action   {:event/type :write-config}
+                    :on-action   {:event/type :write-config
+                                  :key        button}
                     :disable     (not connected?)
                     :wrap-text   true
                     :style-class "c64-button"})
@@ -199,7 +201,8 @@
                    "APPLY CONFIG:\napply the configuration present in USBSID ram for direct use."
                    {:fx/type     :button
                     :text        "APPLY CFG"
-                    :on-action   {:event/type :apply-config}
+                    :on-action   {:event/type :apply-config
+                                  :key        button}
                     :disable     (not connected?)
                     :wrap-text   true
                     :style-class "c64-button"})
@@ -209,7 +212,8 @@
                    "SAVE CONFIG:\nsave the active configuration to USBSID flash memory, then load and apply the saved configuration into USBSID ram for direct use."
                    {:fx/type     :button
                     :text        "SAVE CFG"
-                    :on-action   {:event/type :save-noreset}
+                    :on-action   {:event/type :save-noreset
+                                  :key        button}
                     :disable     (not connected?)
                     :wrap-text   true
                     :style-class "c64-button-primary"})
@@ -219,7 +223,8 @@
                    "SAVE CONFIG & REBOOT:\nsave the active configuration to USBSID flash memory and reboot/power cycle after saving. The configuration is then automatically applied."
                    {:fx/type     :button
                     :text        "+REBOOT"
-                    :on-action   {:event/type :save-config}
+                    :on-action   {:event/type :save-config
+                                  :key        button}
                     :disable     (not connected?)
                     :wrap-text   true
                     :style-class "c64-button-primary"})
@@ -229,7 +234,8 @@
                    "RELOAD FROM FLASH:\nReload the last saved configuration from USBSID flash memory and apply it for direct use"
                    {:fx/type     :button
                     :text        "RELOAD"
-                    :on-action   {:event/type :reload-flash}
+                    :on-action   {:event/type :reload-flash
+                                  :key        button}
                     :disable     (not connected?)
                     :wrap-text   true
                     :style-class "c64-button-danger"})
@@ -238,7 +244,8 @@
                    button
                    "SAVE INI:\nwrite the current configuration to an .ini file on disk so it can be reloaded later."
                    {:text        "SAVE INI"
-                    :on-action   {:event/type :export-ini}
+                    :on-action   {:event/type :export-ini
+                                  :key        button}
                     :style-class "c64-button"})
 
     :load-ini     (popup
@@ -246,7 +253,8 @@
                    button
                    "LOAD INI:\nload a previously saved .ini configuration into the tool (does not write to the board)."
                    {:text        "LOAD INI"
-                    :on-action   {:event/type :import-ini}
+                    :on-action   {:event/type :import-ini
+                                  :key        button}
                     :style-class "c64-button"})
     :reset-dflts  (popup
                    hover-popup
@@ -254,6 +262,7 @@
                    "RESET DEFAULTS:\nReset the USBSID-Pico configuration to default settings and reboot/power cycle."
                    {:fx/type     :button
                     :text        "RESET DEFAULTS"
-                    :on-action   {:event/type :reset-config}
+                    :on-action   {:event/type :reset-config
+                                  :key        button}
                     :disable     (not connected?)
                     :style-class "c64-button-danger"})}))
