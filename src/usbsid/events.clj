@@ -35,22 +35,28 @@
     (driver/set-config! path value))
   (state/set-config-value! path value))
 
-(defmethod handle :connect [_]
+(defmethod handle :connect [{:keys [key]}]
+  (when key (handle {:event/type :popup-hide :key key}))
   (driver/connect!))
 
-(defmethod handle :disconnect [_]
+(defmethod handle :disconnect [{:keys [key]}]
+  (when key (handle {:event/type :popup-hide :key key}))
   (driver/disconnect!))
 
-(defmethod handle :read-config [_]
+(defmethod handle :read-config [{:keys [key]}]
+  (when key (handle {:event/type :popup-hide :key key}))
   (driver/read-config!))
 
-(defmethod handle :write-config [_]
+(defmethod handle :write-config [{:keys [key]}]
+  (when key (handle {:event/type :popup-hide :key key}))
   (driver/write-config!))
 
-(defmethod handle :save-config [_]
+(defmethod handle :save-config [{:keys [key]}]
+  (when key (handle {:event/type :popup-hide :key key}))
   (driver/save-reboot!))
 
-(defmethod handle :reset-config [_]
+(defmethod handle :reset-config [{:keys [key]}]
+  (when key (handle {:event/type :popup-hide :key key}))
   (driver/reset-config!))
 
 (defmethod handle :detect-sids [_]
@@ -62,13 +68,16 @@
     (state/log!
      (str "Preset " (name preset) " selected (not connected - connect board to apply)"))))
 
-(defmethod handle :apply-config [_]
+(defmethod handle :apply-config [{:keys [key]}]
+  (when key (handle {:event/type :popup-hide :key key}))
   (driver/apply-config!))
 
-(defmethod handle :save-noreset [_]
+(defmethod handle :save-noreset [{:keys [key]}]
+  (when key (handle {:event/type :popup-hide :key key}))
   (driver/save-config!))
 
-(defmethod handle :reload-flash [_]
+(defmethod handle :reload-flash [{:keys [key]}]
+  (when key (handle {:event/type :popup-hide :key key}))
   (driver/reload-config!))
 
 (defmethod handle :auto-detect [_]
