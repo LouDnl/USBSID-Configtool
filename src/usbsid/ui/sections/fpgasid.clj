@@ -136,46 +136,46 @@
         spinsl (- 8 (.length spinsb))
         spinsp (string/join (repeat spinsl "0"))
         spins  (str spinsp spinsb)]
-    [{:fx/type :h-box
+    [{:fx/type     :v-box
+      :style-class "c64-vbox"
+      :spacing     12
+      :padding     {:top    8
+                    :right  8
+                    :bottom 8
+                    :left   0}
+      :children
+      [(w/c64-narrow-row "Identifier"
+                         {:fx/type     :label
+                          :text        (str (get chipconfig :id) " (FPGASID)")
+                          :style-class "c64-label-dim"})
+       (w/c64-narrow-row "CPLD Revision"
+                         {:fx/type     :label
+                          :text        (format "$%02X" (get chipconfig :cpld))
+                          :style-class "c64-label-dim"})
+       (w/c64-narrow-row "FPGA Revision"
+                         {:fx/type     :label
+                          :text        (format "$%02X" (get chipconfig :fpga))
+                          :style-class "c64-label-dim"})
+       (w/c64-narrow-row "PCA Revision"
+                         {:fx/type     :label
+                          :text        (format "$%02X" (get chipconfig :pca))
+                          :style-class "c64-label-dim"})
+       (w/c64-narrow-row "Unique ID"
+                         {:fx/type     :label
+                          :text        (get chipconfig :unique_id)
+                          :style-class "c64-label-dim"})
+       (w/c64-narrow-row "Clock frequency"
+                         {:fx/type     :label
+                          :text        (format "%.3f μs" (get chipconfig :frequency))
+                          :style-class "c64-label-dim"})
+       (w/c64-narrow-row "Select pins"
+                         {:fx/type     :label
+                          :text        (format "$%02X 0b%s" spinsr spins)
+                          :style-class "c64-label-dim"})]}
+     {:fx/type :h-box
       :spacing 12
       :children
-      [{:fx/type     :v-box
-        :style-class "c64-vbox"
-        :spacing     12
-        :padding     {:top    8
-                      :right  8
-                      :bottom 8
-                      :left   0}
-        :children
-        [(w/c64-narrow-row "Identifier"
-                           {:fx/type     :label
-                            :text        (str (get chipconfig :id) " (FPGASID)")
-                            :style-class "c64-label-dim"})
-         (w/c64-narrow-row "CPLD Revision"
-                           {:fx/type     :label
-                            :text        (format "$%02X" (get chipconfig :cpld))
-                            :style-class "c64-label-dim"})
-         (w/c64-narrow-row "FPGA Revision"
-                           {:fx/type     :label
-                            :text        (format "$%02X" (get chipconfig :fpga))
-                            :style-class "c64-label-dim"})
-         (w/c64-narrow-row "PCA Revision"
-                           {:fx/type     :label
-                            :text        (format "$%02X" (get chipconfig :pca))
-                            :style-class "c64-label-dim"})
-         (w/c64-narrow-row "Unique ID"
-                           {:fx/type     :label
-                            :text        (get chipconfig :unique_id)
-                            :style-class "c64-label-dim"})
-         (w/c64-narrow-row "Clock frequency"
-                           {:fx/type     :label
-                            :text        (format "%.3f μs" (get chipconfig :frequency))
-                            :style-class "c64-label-dim"})
-         (w/c64-narrow-row "Select pins"
-                           {:fx/type     :label
-                            :text        (format "$%02X 0b%s" spinsr spins)
-                            :style-class "c64-label-dim"})]}
-       (index-config "A" chipconfig {:hover-popup hover-popup})
+      [(index-config "A" chipconfig {:hover-popup hover-popup})
        (index-config "B" chipconfig {:hover-popup hover-popup})]}
 
      (w/c64-separator)
