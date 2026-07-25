@@ -585,7 +585,7 @@
        @drv-atom
        (bit-and (.get Config$Cfg/SAVE_CONFIG) 0xff)
        (into-array Byte [(cfg-byte 0)]))
-      (state/set-connection! :disconnected nil nil)
+      (disconnect!)
       (state/log! "Saved. Board rebooting - reconnect when ready."))))
 
 (defn reset-config!
@@ -780,7 +780,7 @@
        @drv-atom
        (bit-and (.get Config$Cfg/RESET_USBSID) 0xff)
        (into-array Byte [(cfg-byte 0)]))
-      (state/set-connection! :disconnected nil nil)
+      (disconnect!)
       (state/log! "MCU reset. Reconnect when ready."))))
 
 (defn bootloader!
@@ -790,7 +790,7 @@
     (fn []
       (state/log! "Entering bootloader mode (USB will disconnect)")
       (USBSIDDevice/sendCommand (.get Cmd/BOOTLOADER) (into-array Byte []))
-      (state/set-connection! :disconnected nil nil)
+      (disconnect!)
       (state/log! "Board in bootloader mode. Flash new firmware, then reconnect."))))
 
 (def ^:private preset->cfg
