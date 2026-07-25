@@ -189,7 +189,8 @@
    [:lock-audio-sw]          21
    [:mirrored]               22
    [:flipped]                23
-   [:mixed]                  24})
+   [:mixed]                  24
+   [:disable-changedetect]   25})
 
 (defmulti config->commands*
   "Convert a config map to a seq of [section item value] triples for SET_CONFIG.
@@ -230,7 +231,8 @@
      [0xB (if (:lock-audio-sw cfg) 1 0) 0] ; 21
      [0xC (if (:mirrored cfg) 1 0) 0] ; 22
      [0xD (if (:flipped cfg) 1 0) 0] ; 23
-     [0xE (if (:mixed cfg) 1 0) 0]])) ; 24
+     [0xE (if (:mixed cfg) 1 0) 0] ; 24
+     [0xF (if (:disable-changedetect cfg) 1 0) 0]])) ; 25
 
 (defn- legacy-socket-cmds
   "SET_CONFIG triples for one legacy-firmware socket.
