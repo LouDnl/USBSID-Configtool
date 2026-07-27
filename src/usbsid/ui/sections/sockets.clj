@@ -159,38 +159,54 @@
 
 (defn preset-panel
   "If your lazy like, kinda..."
-  [config]
-  {:fx/type :h-box
-   :spacing 12
-   :children
-   [{:fx/type     :v-box
-     :style-class "c64-section"
-     :spacing     6
+  [config connection]
+  (let [fw        (get-in connection [:fw-version])
+        pcb       (get-in connection [:pcb-version])
+        fwverint  (model/parse-fw-version fw)
+        pcbverint (model/parse-pcb-version pcb)]
+    {:fx/type :h-box
+     :spacing 12
      :children
-     [{:fx/type     :label
-       :text        "(!) Presets are automatically applied and saved to flash."
-       :style-class ["c64-warning-text" "c64-text-wrap"]}
-
-      (w/c64-row "Preset"
-                 {:fx/type          :combo-box
-                  :style-class      ["combo-box" "c64-combo-box-wide"]
-                  :items            (mapv :label model/presets)
-                  :value            (get-in model/preset-by-key [(:last-preset config) :label])
-                  :on-value-changed (fn [v]
-                                      (when-let [p (first (filter (comp #{v} :label) model/presets))]
-                                        (events/config-changed! [:last-preset] (:key p))))})
-
-      {:fx/type     :label
-       :text        "During apply an auto detection will run as validation"
-       :style-class ["c64-label-dim" "c64-text-wrap"]}
-
-      {:fx/type     :h-box
-       :style-class "c64-hbox"
-       :spacing     8
+     [{:fx/type     :v-box
+       :style-class "c64-section"
+       :spacing     6
        :children
-       [(w/c64-button "APPLY PRESET"
-                      {:event/type :apply-preset
-                       :preset     (:last-preset config)})]}]}]})
+       (cond->
+        [{:fx/type     :label
+          :text        "(!) Presets are automatically applied and saved to flash."
+          :style-class ["c64-warning-text" "c64-text-wrap"]}
+
+         (w/c64-row "Preset"
+                    {:fx/type          :combo-box
+                     :style-class      ["combo-box" "c64-combo-box-wide"]
+                     ; override combo-box width width and force computed size
+                     :style            "-fx-pref-width: -1; -fx-min-width: -1; -fx-max-width: -1;"
+                     :items            (mapv :label model/presets)
+                     :value            (get-in model/preset-by-key [(:last-preset config) :label])
+                     :on-value-changed (fn [v]
+                                         (prn v)
+                                         (when-let [p (first (filter (comp #{v} :label) model/presets))]
+                                           (prn p)
+                                           (events/config-changed! [:last-preset] (:key p))))})
+
+         {:fx/type     :label
+          :text        "During apply an auto detection will run as validation"
+          :style-class ["c64-label-dim" "c64-text-wrap"]}
+
+         {:fx/type     :h-box
+          :style-class "c64-hbox"
+          :spacing     8
+          :children
+          [(w/c64-button "APPLY PRESET"
+                         {:event/type :apply-preset
+                          :preset     (:last-preset config)})]}]
+         (and
+          (>= fwverint 70)
+          (>= pcbverint 15))
+         (conj
+          {:fx/type     :label
+          :text        "(!v1.5+) Presets will only persist reboots if you disable automatic socket change detection!"
+          :style-class ["c64-error-text" "c64-text-wrap"]}))}]}))
 
 (defn sockets-section
   "I hold the one true specials!"
@@ -226,4 +242,4 @@
 
       (w/c64-separator)
       (w/c64-header "SOCKET PRESET")
-      (preset-panel config)]}))
+      (preset-panel config connection)]}))

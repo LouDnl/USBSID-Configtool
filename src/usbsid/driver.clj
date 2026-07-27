@@ -50,6 +50,7 @@
      ; states
      :need-confirmation    (pos? (g 2)) ; Need configuration confirmation v1.5+ only
      :disable-changedetect (pos? (g 3)) ; Disable socket change detection v1.5+ only
+     :last-preset          (:key (get model/preset-by-id (g 4)))
      ; Clockworx
      :lock-clockrate       (pos? (g 5))
      :external-clock       (pos? (g 6))
@@ -541,14 +542,18 @@
                               :always
                               (assoc :singles true))
             commandlocation (get config-path->command-id path)
-            cfgvec          (config->commands* :v0_7 cfgitem)
-            [a b c]         (nth cfgvec commandlocation)]
-        (try
+            cfgvec          (when (seq commandlocation)
+                              (config->commands* :v0_7 cfgitem))
+            [a b c]         (when (seq commandlocation)
+                              (nth cfgvec commandlocation))]
+
+        (when (seq commandlocation)
+         (try
           (state/log! (str "Set configuration item: " (dissoc cfgitem :singles)))
           (set-cfg {:a a :b b :c c})
           (catch Exception e
             (state/log! (format "send-config! error [0x%X 0x%X 0x%X]: %s" a b c (.getMessage e)))
-            (throw e)))))))
+            (throw e))))))))
 
 (defn write-config!
   "Write the current configuration to USBSID-Pico"

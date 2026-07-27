@@ -29,6 +29,7 @@
 (defmethod handle :config-changed [{:keys [path value]}]
   (when
    (and
+    (not= path [:last-preset])
     (not= (get-in @state/*state [:connection :fw-line]) :unknown)
     (not= (get-in @state/*state [:connection :fw-line]) :legacy)
     (= (get-in @state/*state [:connection :status]) :connected))

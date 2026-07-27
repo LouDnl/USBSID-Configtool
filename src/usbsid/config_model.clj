@@ -244,4 +244,5 @@
    :mixed                false
    :need-confirmation    false
    :disable-changedetect false
+   :last-preset          :dual-both ; defaults to 2 dual-both
    :raw-config           nil}) ; save the raw config bytes just in case we need to verify things
