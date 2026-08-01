@@ -542,12 +542,12 @@
                               :always
                               (assoc :singles true))
             commandlocation (get config-path->command-id path)
-            cfgvec          (when (seq commandlocation)
+            cfgvec          (when (integer? commandlocation)
                               (config->commands* :v0_7 cfgitem))
-            [a b c]         (when (seq commandlocation)
+            [a b c]         (when (integer? commandlocation)
                               (nth cfgvec commandlocation))]
 
-        (when (seq commandlocation)
+        (when (integer? commandlocation)
          (try
           (state/log! (str "Set configuration item: " (dissoc cfgitem :singles)))
           (set-cfg {:a a :b b :c c})
