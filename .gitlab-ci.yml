@@ -1,0 +1,427 @@
+# USBSID-Configtool GitLab CI/CD configuration
+#
+# Mirrors the GitHub Actions workflow .github/workflows/ci-tagged-build-or-release.yml:
+#   test     -> test:linux                      unit tests
+#   ci       -> ci:linux                        uberjar + launchers under Xvfb
+#   package  -> package:*                       platform packages, tags only
+#   cleanup  -> cleanup:old-snapshots           d* tags
+#   prerelease / release -> create:snapshot / create:release
+#
+# Supports two GitLab instances:
+#   - gitlab.loudai.nl (private): Linux runner only
+#   - gitlab.com (public): Linux, macOS and Windows runners
+#
+# The Windows and macOS package jobs install their own JDK and Clojure and are
+# allowed to fail: a release is still created from what did build. Remove
+# allow_failure once they have been seen passing on gitlab.com.
+#
+# macOS Intel (macos-15-intel on GitHub) is not built here: gitlab.com SaaS has
+# no Intel macOS runner.
+
+variables:
+  # Java 25 (Temurin) on Ubuntu 24.04. The package names below assume noble.
+  JAVA_IMAGE: "eclipse-temurin:25-jdk-noble"
+  # Same as the GitHub workflow, the install dir there says 1.1 for a 1.2 jar
+  DRIVERJAR: "usbsid-usb-driver-library-java-1.2.jar"
+  DRIVERPOM: "usbsid-usb-driver-library-java-1.2.pom"
+  # Instance without macOS and Windows runners
+  PRIVATE_HOST: "gitlab.loudai.nl"
+
+# Pipeline runs on:
+# - branch pushes and merge requests (one pipeline per push, not two)
+# - d* tags: tagged build prerelease
+# - v* tags: versioned release
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      variables:
+        PIPELINE_TYPE: "dev"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+      variables:
+        PIPELINE_TYPE: "dev"
+    - if: $CI_COMMIT_TAG =~ /^d[0-9].*$/
+      variables:
+        PIPELINE_TYPE: "snapshot"
+    - if: $CI_COMMIT_TAG =~ /^v[0-9].*$/
+      variables:
+        PIPELINE_TYPE: "release"
+
+stages:
+  - test
+  - build
+  - package
+  - collect
+  - release
+
+default:
+  interruptible: true
+
+# ============================================================================
+# RULE SETS
+# ============================================================================
+
+.rules_all:
+  rules:
+    - if: $PIPELINE_TYPE
+
+.rules_tagged:
+  rules:
+    - if: $PIPELINE_TYPE == "snapshot" || $PIPELINE_TYPE == "release"
+
+# Windows and macOS runners only exist on gitlab.com
+.rules_tagged_public:
+  rules:
+    - if: ($PIPELINE_TYPE == "snapshot" || $PIPELINE_TYPE == "release") && $CI_SERVER_HOST != $PRIVATE_HOST
+
+# ============================================================================
+# SHARED PIECES
+# ============================================================================
+
+# The Java driver jar goes into the local Maven repo by hand (it is not on
+# Maven Central), and so do the patched libusb4java native libs. See
+# scripts/install-libusb4java.sh for why the stock ones do not work on Windows.
+.install_driver_unix:
+  script:
+    - DIR="$HOME/.m2/repository/usbsid/usbsid-usb-driver-library-java/1.1"
+    - mkdir -p "$DIR"
+    - cp "assets/driver/${DRIVERJAR}" "$DIR/"
+    - cp "assets/driver/${DRIVERPOM}" "$DIR/"
+    - ./scripts/install-libusb4java.sh
+
+# Ubuntu image with the JDK. Clojure CLI is installed with the official
+# script, which is what setup-clojure does on GitHub. JavaFX needs GTK and
+# friends at runtime, and the tests and the CI build run it under Xvfb.
+# ~/.m2 is a symlink into the project dir so the Maven cache can be cached.
+.clojure_linux:
+  image: ${JAVA_IMAGE}
+  variables:
+    DEBIAN_FRONTEND: noninteractive
+  cache:
+    key:
+      prefix: m2
+      files:
+        - deps.edn
+    paths:
+      - .m2/
+  before_script:
+    - apt-get update
+    - apt-get install -y curl git zip unzip file binutils xvfb libgtk-3-0 libxtst6 libxxf86vm1 libgl1 libasound2
+    - curl -fsSL https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh -o /tmp/linux-install.sh
+    - bash /tmp/linux-install.sh
+    - mkdir -p "${CI_PROJECT_DIR}/.m2"
+    - rm -rf "${HOME}/.m2"
+    - ln -s "${CI_PROJECT_DIR}/.m2" "${HOME}/.m2"
+    - !reference [.install_driver_unix, script]
+
+# ============================================================================
+# TEST AND CI BUILD (test, ci)
+# ============================================================================
+
+# Runs on branches, merge requests and tags alike, like GitHub. Tags then go on
+# to package the platform builds.
+test:linux:
+  extends:
+    - .clojure_linux
+    - .rules_all
+  stage: test
+  script:
+    - clojure -T:build test
+
+# Full CI pipeline: tests + uberjar + launcher scripts
+ci:linux:
+  extends:
+    - .clojure_linux
+    - .rules_all
+  stage: build
+  variables:
+    NO_AT_BRIDGE: "1"
+  script:
+    - xvfb-run -a clojure -T:build ci
+  artifacts:
+    name: "jar-and-launchers"
+    paths:
+      - target/usbsid-configtool-*.jar
+      - target/run.sh
+      - target/run.bat
+    expire_in: 1 week
+  needs:
+    - job: test:linux
+
+# ============================================================================
+# PLATFORM PACKAGES (package, tags only)
+# The uberjar is built again on every platform runner so build.clj's
+# host-jfx-alias picks the matching JavaFX classifier for the host. Reusing the
+# Ubuntu built one would never pull in the mac dylibs, and the .app would fail
+# with "no suitable pipeline".
+# Output is staged with platform tagged names so all of them can coexist.
+# ============================================================================
+
+# Linux: a jpackage app-image (zipped directory) and a self-contained AppImage
+package:linux:
+  extends:
+    - .clojure_linux
+    - .rules_tagged
+  stage: package
+  parallel:
+    matrix:
+      - PLATFORM: [linux, linux-appimage]
+  script:
+    - clojure -T:build uber
+    - clojure -T:build package
+    - |
+      if [ "$PLATFORM" = "linux-appimage" ]; then
+        bash scripts/build-appimage.sh
+      fi
+    - |
+      VERSION=$(cat resources/.version | tr -d '[:space:]')
+      mkdir -p staging
+      if [ "$PLATFORM" = "linux" ]; then
+        (cd target/package && zip -r "../../staging/USBSID-Configtool-${VERSION}-linux.zip" USBSID-Configtool/)
+      else
+        cp target/appimage/*.AppImage staging/
+      fi
+      ls -la staging
+  artifacts:
+    name: "package-${PLATFORM}"
+    paths:
+      - staging/*
+    expire_in: 4 weeks
+  needs:
+    - job: ci:linux
+
+# macOS Apple Silicon (jpackage .dmg), gitlab.com SaaS runner
+package:macos-arm:
+  extends: .rules_tagged_public
+  stage: package
+  tags:
+    - saas-macos-medium-m1
+  image: macos-14-xcode-15
+  allow_failure: true
+  variables:
+    PLATFORM: "macos-arm"
+  before_script:
+    - brew update
+    - brew install --cask temurin@25 || brew install --cask temurin
+    - brew install clojure/tools/clojure
+    - export JAVA_HOME=$(/usr/libexec/java_home -v 25)
+    - export PATH="$JAVA_HOME/bin:$PATH"
+    - java -version
+    - !reference [.install_driver_unix, script]
+  script:
+    - clojure -T:build uber
+    - clojure -T:build package
+    - |
+      VERSION=$(cat resources/.version | tr -d '[:space:]')
+      mkdir -p staging
+      cp target/package/*.dmg "staging/USBSID-Configtool-${VERSION}-macos-aarch64.dmg"
+      ls -la staging
+  artifacts:
+    name: "package-macos-arm"
+    paths:
+      - staging/*
+    expire_in: 4 weeks
+  needs:
+    - job: ci:linux
+      artifacts: false
+
+# Windows (jpackage .msi, needs the WiX toolset), gitlab.com SaaS runner.
+# The runner shell is PowerShell. The Clojure CLI comes from the official
+# ClojureTools module, and the args are quoted so PowerShell does not try to
+# read -T:build as one of its own parameters.
+package:windows:
+  extends: .rules_tagged_public
+  stage: package
+  tags:
+    - saas-windows-medium-amd64
+  allow_failure: true
+  variables:
+    PLATFORM: "windows"
+  before_script:
+    - choco install temurin25 wixtoolset -y --no-progress
+    - |
+      $jdk = Get-ChildItem "C:\Program Files\Eclipse Adoptium" -Directory | Where-Object Name -like "jdk-25*" | Select-Object -First 1
+      $env:JAVA_HOME = $jdk.FullName
+      $wix = Get-ChildItem "C:\Program Files (x86)" -Directory -Filter "WiX Toolset*" | Select-Object -First 1
+      $env:PATH = "$env:JAVA_HOME\bin;$($wix.FullName)\bin;$env:PATH"
+      java -version
+      Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
+      Install-Module -Name ClojureTools -Scope CurrentUser -Force
+      Import-Module ClojureTools
+      $dir = "$HOME\.m2\repository\usbsid\usbsid-usb-driver-library-java\1.1"
+      New-Item -ItemType Directory -Force $dir | Out-Null
+      Copy-Item "assets/driver/$env:DRIVERJAR" $dir
+      Copy-Item "assets/driver/$env:DRIVERPOM" $dir
+      & "C:\Program Files\Git\bin\bash.exe" scripts/install-libusb4java.sh
+  script:
+    - |
+      $jdk = Get-ChildItem "C:\Program Files\Eclipse Adoptium" -Directory | Where-Object Name -like "jdk-25*" | Select-Object -First 1
+      $wix = Get-ChildItem "C:\Program Files (x86)" -Directory -Filter "WiX Toolset*" | Select-Object -First 1
+      $env:JAVA_HOME = $jdk.FullName
+      $env:PATH = "$env:JAVA_HOME\bin;$($wix.FullName)\bin;$env:PATH"
+      Import-Module ClojureTools
+      clojure "-T:build" uber
+      clojure "-T:build" package
+      $version = (Get-Content resources/.version -Raw).Trim()
+      New-Item -ItemType Directory -Force staging | Out-Null
+      $msi = Get-ChildItem target/package/*.msi | Select-Object -First 1
+      Copy-Item $msi.FullName "staging/USBSID-Configtool-$version-windows.msi"
+  artifacts:
+    name: "package-windows"
+    paths:
+      - staging/*
+    expire_in: 4 weeks
+  needs:
+    - job: ci:linux
+      artifacts: false
+
+# ============================================================================
+# COLLECT (release / prerelease file set)
+# ============================================================================
+
+# Delete snapshot prereleases older than 30 days, but keep the newest 10.
+# Needs a GitLab API token in the GITLAB_API_TOKEN CI/CD variable, skipped
+# without one. Only releases are deleted, the d* tags stay.
+cleanup:old-snapshots:
+  stage: collect
+  image: alpine:latest
+  variables:
+    GIT_STRATEGY: none
+  before_script:
+    - apk add --no-cache curl jq
+  script:
+    - |
+      if [ -z "${GITLAB_API_TOKEN:-}" ]; then
+        echo "GITLAB_API_TOKEN not set, skipping cleanup"
+        exit 0
+      fi
+      API_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases"
+      releases=$(curl -fsS --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" "${API_URL}?per_page=100")
+      # Newest first, skip the first 10, then keep everything younger than 30 days
+      echo "$releases" | jq -r --argjson now "$(date +%s)" '
+        [ .[] | select(.tag_name | test("^d[0-9a-z]+$")) ]
+        | sort_by(.created_at) | reverse
+        | to_entries[] | select(.key >= 10)
+        | select(($now - (.value.created_at | sub("\\.[0-9]+"; "") | sub("\\+00:00$"; "Z") | fromdateiso8601)) > 30 * 86400)
+        | .value.tag_name' | while read -r tag; do
+        echo "Deleting old snapshot prerelease: ${tag}"
+        curl -fsS --request DELETE --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" "${API_URL}/${tag}" > /dev/null
+      done
+      echo "Cleanup complete"
+  rules:
+    - if: $PIPELINE_TYPE == "snapshot"
+  allow_failure: true
+
+# Platform packages + jar + launchers in one place. Windows and macOS only
+# exist on gitlab.com, hence optional.
+collect:files:
+  stage: collect
+  image: alpine:latest
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - mkdir -p release
+    - cp -v staging/* release/
+    - cp -v target/usbsid-configtool-*.jar target/run.sh target/run.bat release/
+    - ls -la release
+  artifacts:
+    name: "usbsid-configtool-release"
+    paths:
+      - release/
+    expire_in: never
+  needs:
+    - job: ci:linux
+    - job: package:linux
+      parallel:
+        matrix:
+          - PLATFORM: [linux, linux-appimage]
+    - job: package:macos-arm
+      optional: true
+    - job: package:windows
+      optional: true
+  rules:
+    - if: $PIPELINE_TYPE == "snapshot" || $PIPELINE_TYPE == "release"
+
+# Commits since the previous v* tag, for the release description
+collect:notes:
+  stage: collect
+  image: alpine:latest
+  variables:
+    GIT_DEPTH: "0"
+  before_script:
+    - apk add --no-cache git
+    - git config --global --add safe.directory "${CI_PROJECT_DIR}"
+  script:
+    - |
+      echo "**Commits in this release:**" > release_notes.md
+      PREV=$(git tag --list 'v*' --sort=-version:refname | grep -v "^${CI_COMMIT_TAG}\$" | head -n 1 || true)
+      if [ -n "$PREV" ]; then
+        git log "${PREV}..HEAD" --oneline >> release_notes.md
+      else
+        git log --oneline >> release_notes.md
+      fi
+      cat release_notes.md
+  artifacts:
+    paths:
+      - release_notes.md
+    expire_in: 4 weeks
+  rules:
+    - if: $PIPELINE_TYPE == "release"
+
+# ============================================================================
+# RELEASE
+# ============================================================================
+
+# Tagged build pre-release, d* tags only
+create:snapshot:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script:
+    - echo "Creating pre-release for ${CI_COMMIT_TAG}"
+  release:
+    tag_name: ${CI_COMMIT_TAG}
+    name: "Tagged build ${CI_COMMIT_TAG}"
+    description: |
+      ## Tagged build ${CI_COMMIT_TAG}
+
+      Automated build for testing purposes.
+      This is a prerelease and may contain bugs.
+    assets:
+      links:
+        - name: "Release files, browse"
+          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/browse/release?job=collect:files"
+          link_type: "package"
+        - name: "Release files, download all"
+          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/download?job=collect:files"
+          link_type: "package"
+  needs:
+    - job: collect:files
+      artifacts: false
+  rules:
+    - if: $PIPELINE_TYPE == "snapshot"
+
+# Stable release, v* tags only
+create:release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script:
+    - echo "Creating release for ${CI_COMMIT_TAG}"
+  release:
+    tag_name: ${CI_COMMIT_TAG}
+    name: "Release ${CI_COMMIT_TAG}"
+    description: release_notes.md
+    assets:
+      links:
+        - name: "Release files, browse"
+          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/browse/release?job=collect:files"
+          link_type: "package"
+        - name: "Release files, download all"
+          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/download?job=collect:files"
+          link_type: "package"
+  needs:
+    - job: collect:files
+      artifacts: false
+    - job: collect:notes
+  rules:
+    - if: $PIPELINE_TYPE == "release"
