@@ -8,7 +8,7 @@
 #   prerelease / release -> create:snapshot / create:release
 #
 # Supports two GitLab instances:
-#   - gitlab.loudai.nl (private): Linux runner only
+#   - gitlab.loudai.nl (private): Linux and Windows runners
 #   - gitlab.com (public): Linux, macOS and Windows runners
 #
 # The Windows and macOS package jobs install their own JDK and Clojure and are
@@ -24,8 +24,11 @@ variables:
   # Same as the GitHub workflow, the install dir there says 1.1 for a 1.2 jar
   DRIVERJAR: "usbsid-usb-driver-library-java-1.2.jar"
   DRIVERPOM: "usbsid-usb-driver-library-java-1.2.pom"
-  # Instance without macOS and Windows runners
+  # Instance without a macOS runner
   PRIVATE_HOST: "gitlab.loudai.nl"
+  # Windows runner tag. The default is the gitlab.com SaaS runner, set this
+  # in the project CI/CD variables on an instance with its own Windows runner.
+  WINDOWS_RUNNER_TAG: "saas-windows-medium-amd64"
 
 # Pipeline runs on:
 # - branch pushes and merge requests (one pipeline per push, not two)
@@ -70,8 +73,8 @@ default:
   rules:
     - if: $PIPELINE_TYPE == "snapshot" || $PIPELINE_TYPE == "release"
 
-# Windows and macOS runners only exist on gitlab.com
-.rules_tagged_public:
+# macOS runners only exist on gitlab.com
+.rules_tagged_macos:
   rules:
     - if: ($PIPELINE_TYPE == "snapshot" || $PIPELINE_TYPE == "release") && $CI_SERVER_HOST != $PRIVATE_HOST
 
@@ -193,7 +196,7 @@ package:linux:
 
 # macOS Apple Silicon (jpackage .dmg), gitlab.com SaaS runner
 package:macos-arm:
-  extends: .rules_tagged_public
+  extends: .rules_tagged_macos
   stage: package
   tags:
     - saas-macos-medium-m1
@@ -226,15 +229,15 @@ package:macos-arm:
     - job: ci:linux
       artifacts: false
 
-# Windows (jpackage .msi, needs the WiX toolset), gitlab.com SaaS runner.
+# Windows (jpackage .msi, needs the WiX toolset), gitlab.com SaaS runner by default.
 # The runner shell is PowerShell. The Clojure CLI comes from the official
 # ClojureTools module, and the args are quoted so PowerShell does not try to
 # read -T:build as one of its own parameters.
 package:windows:
-  extends: .rules_tagged_public
+  extends: .rules_tagged
   stage: package
   tags:
-    - saas-windows-medium-amd64
+    - $WINDOWS_RUNNER_TAG
   allow_failure: true
   variables:
     PLATFORM: "windows"
@@ -313,8 +316,8 @@ cleanup:old-snapshots:
     - if: $PIPELINE_TYPE == "snapshot"
   allow_failure: true
 
-# Platform packages + jar + launchers in one place. Windows and macOS only
-# exist on gitlab.com, hence optional.
+# Platform packages + jar + launchers in one place. macOS only exists on
+# gitlab.com, hence optional.
 collect:files:
   stage: collect
   image: alpine:latest
@@ -339,7 +342,6 @@ collect:files:
     - job: package:macos-arm
       optional: true
     - job: package:windows
-      optional: true
   rules:
     - if: $PIPELINE_TYPE == "snapshot" || $PIPELINE_TYPE == "release"
 
