@@ -110,7 +110,7 @@ default:
       - .m2/
   before_script:
     - apt-get update
-    - apt-get install -y curl git zip unzip file binutils xvfb libgtk-3-0 libxtst6 libxxf86vm1 libgl1 libasound2
+    - apt-get install -y curl git zip unzip file binutils xvfb libgtk-3-0 libxtst6 libxxf86vm1 libgl1 libasound2t64
     - curl -fsSL https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh -o /tmp/linux-install.sh
     - bash /tmp/linux-install.sh
     - mkdir -p "${CI_PROJECT_DIR}/.m2"
