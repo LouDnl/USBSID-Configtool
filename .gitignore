@@ -18,6 +18,8 @@
 # Certainly not these directories
 !.github
 !.github/workflows
+!.gitlab
+!.gitlab/**
 !assets
 !assets/driver
 !assets/lib
