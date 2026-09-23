@@ -315,8 +315,10 @@ package:macos15-intel:
 # module. It is not on the PowerShell Gallery (Install-Module cannot find it)
 # and win-install.ps1 asks for the install location, so the module zip from
 # the clojure/brew-install release is unpacked into the build dir and added to
-# PSModulePath. The args are quoted so PowerShell does not try to read -T:build
-# as one of its own parameters.
+# PSModulePath. -T:build stays unquoted: PowerShell hands it to the module
+# function as two args, "-T:" and "build", which is the form ClojureTools
+# parses as the :build alias. Quoted it arrives as one string and the module
+# reads it as a tool named ":build" ("Unknown tool: :build").
 # PowerShell goes on after most errors, so every step that matters stops the
 # job itself (-ErrorAction Stop, $LASTEXITCODE checks). Without that the job
 # only fails several errors later and the log hides the real cause.
@@ -366,9 +368,9 @@ package:windows:
       $env:PATH = "$env:JAVA_HOME\bin;$($wix.FullName)\bin;$env:PATH"
       $env:PSModulePath = "$(Join-Path $env:CI_PROJECT_DIR '.psmodules');$env:PSModulePath"
       Import-Module ClojureTools -ErrorAction Stop
-      clojure "-T:build" uber
+      clojure -T:build uber
       if ($LASTEXITCODE -ne 0) { throw "clojure -T:build uber failed" }
-      clojure "-T:build" package
+      clojure -T:build package
       if ($LASTEXITCODE -ne 0) { throw "clojure -T:build package failed" }
       $version = (Get-Content resources/.version -Raw).Trim()
       New-Item -ItemType Directory -Force staging | Out-Null
