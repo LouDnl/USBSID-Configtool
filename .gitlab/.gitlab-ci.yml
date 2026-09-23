@@ -253,6 +253,12 @@ package:macos-arm:
 # macOS Intel (jpackage .dmg), private instance's own runner (shell executor
 # on real hardware, no Docker image to pick). ARM runner on the same Mac is
 # planned but not set up yet, so this stays Intel only for now.
+# The runner user has no passwordless sudo, so no brew casks (their .pkg
+# installers need sudo), and Homebrew has no bottles for Intel macOS any more.
+# A JDK 25 already installed on the Mac is used as is. Otherwise the Temurin
+# tarball and the Clojure CLI are installed under MACOS_TOOLS_DIR, outside the
+# build dir, so later jobs reuse them. MACOS_TOOLS_DIR is set in the script,
+# GitLab does not expand $HOME in variables:.
 package:macos15-intel:
   extends: .rules_tagged_macos15intel
   stage: package
@@ -261,13 +267,31 @@ package:macos15-intel:
   allow_failure: true
   variables:
     PLATFORM: "macos-15-intel"
+    TEMURIN_MACOS_URL: "https://api.adoptium.net/v3/binary/latest/25/ga/mac/x64/jdk/hotspot/normal/eclipse"
+    CLOJURE_POSIX_INSTALLER_URL: "https://github.com/clojure/brew-install/releases/latest/download/posix-install.sh"
   before_script:
-    - brew update
-    - brew install --cask temurin@25 || brew install --cask temurin
-    - brew install clojure/tools/clojure
-    - export JAVA_HOME=$(/usr/libexec/java_home -v 25)
-    - export PATH="$JAVA_HOME/bin:$PATH"
+    - export MACOS_TOOLS_DIR="$HOME/.cache/usbsid-ci"
+    - |
+      if ! JAVA_HOME=$(/usr/libexec/java_home -v 25 2>/dev/null); then
+        JDK_DIR="${MACOS_TOOLS_DIR}/temurin-25"
+        if [ ! -x "${JDK_DIR}/Contents/Home/bin/java" ]; then
+          rm -rf "${JDK_DIR}"
+          mkdir -p "${JDK_DIR}"
+          curl -fsSL "${TEMURIN_MACOS_URL}" | tar -xz -C "${JDK_DIR}" --strip-components 1
+        fi
+        JAVA_HOME="${JDK_DIR}/Contents/Home"
+      fi
+      export JAVA_HOME
+    - export PATH="$JAVA_HOME/bin:${MACOS_TOOLS_DIR}/clojure/bin:$PATH"
     - java -version
+    - |
+      if ! command -v clojure >/dev/null; then
+        CLJ_TMP=$(mktemp -d)
+        curl -fsSL "${CLOJURE_POSIX_INSTALLER_URL}" -o "${CLJ_TMP}/posix-install.sh"
+        (cd "${CLJ_TMP}" && sh posix-install.sh --prefix "${MACOS_TOOLS_DIR}/clojure")
+        rm -rf "${CLJ_TMP}"
+      fi
+    - clojure --version
     - !reference [.install_driver_unix, script]
   script:
     - clojure -T:build uber
@@ -287,9 +311,15 @@ package:macos15-intel:
       artifacts: false
 
 # Windows (jpackage .msi, needs the WiX toolset), gitlab.com SaaS runner by default.
-# The runner shell is PowerShell. The Clojure CLI comes from the official
-# ClojureTools module, and the args are quoted so PowerShell does not try to
-# read -T:build as one of its own parameters.
+# The runner shell is PowerShell. The Clojure CLI is the official ClojureTools
+# module. It is not on the PowerShell Gallery (Install-Module cannot find it)
+# and win-install.ps1 asks for the install location, so the module zip from
+# the clojure/brew-install release is unpacked into the build dir and added to
+# PSModulePath. The args are quoted so PowerShell does not try to read -T:build
+# as one of its own parameters.
+# PowerShell goes on after most errors, so every step that matters stops the
+# job itself (-ErrorAction Stop, $LASTEXITCODE checks). Without that the job
+# only fails several errors later and the log hides the real cause.
 package:windows:
   extends: .rules_tagged
   stage: package
@@ -298,35 +328,53 @@ package:windows:
   allow_failure: true
   variables:
     PLATFORM: "windows"
+    CLOJURE_TOOLS_ZIP_URL: "https://github.com/clojure/brew-install/releases/latest/download/clojure-tools.zip"
   before_script:
     - choco install temurin25 wixtoolset -y --no-progress
     - |
-      $jdk = Get-ChildItem "C:\Program Files\Eclipse Adoptium" -Directory | Where-Object Name -like "jdk-25*" | Select-Object -First 1
+      $jdk = Get-ChildItem "C:\Program Files\Eclipse Adoptium" -Directory -ErrorAction Stop | Where-Object Name -like "jdk-25*" | Select-Object -First 1
+      if (-not $jdk) { throw "JDK 25 not found in C:\Program Files\Eclipse Adoptium" }
       $env:JAVA_HOME = $jdk.FullName
       $wix = Get-ChildItem "C:\Program Files (x86)" -Directory -Filter "WiX Toolset*" | Select-Object -First 1
+      if (-not $wix) { throw "WiX Toolset not found in C:\Program Files (x86)" }
       $env:PATH = "$env:JAVA_HOME\bin;$($wix.FullName)\bin;$env:PATH"
       java -version
-      Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
-      Install-Module -Name ClojureTools -Scope CurrentUser -Force
-      Import-Module ClojureTools
+      if ($LASTEXITCODE -ne 0) { throw "java -version failed" }
+    - |
+      [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+      $ProgressPreference = "SilentlyContinue"
+      $modules = Join-Path $env:CI_PROJECT_DIR ".psmodules"
+      Remove-Item -Recurse -Force $modules -ErrorAction SilentlyContinue
+      New-Item -ItemType Directory -Force $modules | Out-Null
+      Invoke-WebRequest -Uri $env:CLOJURE_TOOLS_ZIP_URL -OutFile "$modules\clojure-tools.zip" -UseBasicParsing -ErrorAction Stop
+      Expand-Archive "$modules\clojure-tools.zip" -DestinationPath $modules -Force -ErrorAction Stop
+      Remove-Item "$modules\clojure-tools.zip"
+      $env:PSModulePath = "$modules;$env:PSModulePath"
+      Import-Module ClojureTools -ErrorAction Stop
+    - |
       $dir = "$HOME\.m2\repository\usbsid\usbsid-usb-driver-library-java\1.1"
       New-Item -ItemType Directory -Force $dir | Out-Null
-      Copy-Item "assets/driver/$env:DRIVERJAR" $dir
-      Copy-Item "assets/driver/$env:DRIVERPOM" $dir
+      Copy-Item "assets/driver/$env:DRIVERJAR" $dir -ErrorAction Stop
+      Copy-Item "assets/driver/$env:DRIVERPOM" $dir -ErrorAction Stop
       & "C:\Program Files\Git\bin\bash.exe" scripts/install-libusb4java.sh
+      if ($LASTEXITCODE -ne 0) { throw "install-libusb4java.sh failed" }
   script:
     - |
       $jdk = Get-ChildItem "C:\Program Files\Eclipse Adoptium" -Directory | Where-Object Name -like "jdk-25*" | Select-Object -First 1
       $wix = Get-ChildItem "C:\Program Files (x86)" -Directory -Filter "WiX Toolset*" | Select-Object -First 1
       $env:JAVA_HOME = $jdk.FullName
       $env:PATH = "$env:JAVA_HOME\bin;$($wix.FullName)\bin;$env:PATH"
-      Import-Module ClojureTools
+      $env:PSModulePath = "$(Join-Path $env:CI_PROJECT_DIR '.psmodules');$env:PSModulePath"
+      Import-Module ClojureTools -ErrorAction Stop
       clojure "-T:build" uber
+      if ($LASTEXITCODE -ne 0) { throw "clojure -T:build uber failed" }
       clojure "-T:build" package
+      if ($LASTEXITCODE -ne 0) { throw "clojure -T:build package failed" }
       $version = (Get-Content resources/.version -Raw).Trim()
       New-Item -ItemType Directory -Force staging | Out-Null
-      $msi = Get-ChildItem target/package/*.msi | Select-Object -First 1
-      Copy-Item $msi.FullName "staging/USBSID-Configtool-$version-windows.msi"
+      $msi = Get-ChildItem target/package/*.msi -ErrorAction Stop | Select-Object -First 1
+      if (-not $msi) { throw "no .msi in target/package" }
+      Copy-Item $msi.FullName "staging/USBSID-Configtool-$version-windows.msi" -ErrorAction Stop
   artifacts:
     name: "package-windows"
     paths:
