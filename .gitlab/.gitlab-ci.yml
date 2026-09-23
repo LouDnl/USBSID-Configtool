@@ -21,6 +21,8 @@ variables:
   # Same as the GitHub workflow, the install dir there says 1.1 for a 1.2 jar
   DRIVERJAR: "usbsid-usb-driver-library-java-1.2.jar"
   DRIVERPOM: "usbsid-usb-driver-library-java-1.2.pom"
+  # Clojure CLI installer, what setup-clojure runs on GitHub
+  CLOJURE_INSTALLER_URL: "https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh"
   # Instance with the Intel macOS runner (no Apple Silicon runner there)
   PRIVATE_HOST: "gitlab.loudai.nl"
   # Windows runner tag. The default is the gitlab.com SaaS runner, set this
@@ -113,7 +115,7 @@ default:
   before_script:
     - apt-get update
     - apt-get install -y curl git zip unzip file binutils xvfb libgtk-3-0 libxtst6 libxxf86vm1 libgl1 libasound2t64
-    - curl -fsSL https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh -o /tmp/linux-install.sh
+    - curl -fsSL "${CLOJURE_INSTALLER_URL}" -o /tmp/linux-install.sh
     - bash /tmp/linux-install.sh
     - mkdir -p "${CI_PROJECT_DIR}/.m2"
     - rm -rf "${HOME}/.m2"
