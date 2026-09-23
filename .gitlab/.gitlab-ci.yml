@@ -25,9 +25,20 @@ variables:
   CLOJURE_INSTALLER_URL: "https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh"
   # Instance with the Intel macOS runner (no Apple Silicon runner there)
   PRIVATE_HOST: "gitlab.loudai.nl"
+  # Pipelines on any instance other than PRIVATE_HOST (gitlab.com) are off.
+  # The jobs stay in this file; set this to "true" here, or as a CI/CD variable
+  # in the gitlab.com project, to run them again.
+  PUBLIC_PIPELINES_ENABLED: "false"
   # Windows runner tag. The default is the gitlab.com SaaS runner, set this
   # in the project CI/CD variables on an instance with its own Windows runner.
   WINDOWS_RUNNER_TAG: "saas-windows-medium-amd64"
+  # Linux runner tag, the default for every job without its own tags (see
+  # default: below). Without it an untagged job can land on the macOS shell
+  # runner, which has no apt-get and ignores image:. "linux" is a tag of the
+  # private instance's Linux runner. gitlab.com SaaS runners do not carry it, so
+  # set this to "saas-linux-small-amd64" in the gitlab.com project's CI/CD
+  # variables together with PUBLIC_PIPELINES_ENABLED.
+  LINUX_RUNNER_TAG: "linux"
 
 # Pipeline runs on:
 # - branch pushes and merge requests (one pipeline per push, not two)
@@ -35,6 +46,9 @@ variables:
 # - v* tags: versioned release
 workflow:
   rules:
+    # Nothing runs outside PRIVATE_HOST unless PUBLIC_PIPELINES_ENABLED is "true"
+    - if: $CI_SERVER_HOST != $PRIVATE_HOST && $PUBLIC_PIPELINES_ENABLED != "true"
+      when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       variables:
         PIPELINE_TYPE: "dev"
@@ -59,6 +73,9 @@ stages:
 
 default:
   interruptible: true
+  # Jobs with their own tags (Windows, macOS) replace this
+  tags:
+    - $LINUX_RUNNER_TAG
 
 # ============================================================================
 # RULE SETS
