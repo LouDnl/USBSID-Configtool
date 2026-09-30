@@ -1,6 +1,14 @@
 # Changelog
 Please refer to the [releases page](https://github.com/LouDnl/USBSID-Configtool/releases) for more information on version changes
 
+#### Version: 0.4.8
+* Relicense from EPL-2.0 to GPL-3.0-or-later with a GPLv3 section 7 exception for Clojure and other EPL libraries
+* AppImage: update information and .zsync on releases, GPG signature, AppStream metainfo, square icons
+* AppImage: 103 MiB -> 43 MiB (trimmed Java runtime, no unused WebView/media/other-platform native libs)
+* Update bundled Java driver to 1.2.1
+* Fit window size and minimum size to small screens
+* Drop no-op JavaFX --add-opens from packaged launchers
+
 #### Version: 0.4.7
 * Update bundled Java driver to 1.2
 * Update CI build/release workflow
