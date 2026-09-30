@@ -18,7 +18,15 @@ Due to breaking changes in the way the socket values are handled, I advise upgra
 These changes are visual only for pcb v1.3 and lower, but required for pcb v1.4 and higher due to voltage configuration.  
 
 ## Installation
-Download from https://github.com/LouD/USBSID-Configtool/releases
+Download from https://github.com/LouDnl/USBSID-Configtool/releases
+
+### Linux AppImage
+The AppImage bundles its own Java runtime, JavaFX and USB driver. The host needs glibc 2.17 or newer, X11, GTK 3 and OpenGL, which every desktop distribution from 2014 onward has.  
+Release AppImages (`v*` tags) carry update information: AppImageUpdate, AppImageLauncher or Gear Lever update them in place.  
+
+AppImages are signed with this key (`resources/appimage/signing-key.asc`):  
+`35AF 88BA E43D C2EF 11E2  32DF DD4F 7F97 D00F E44C`  
+Check with `./USBSID-Configtool-x.x.x-x86_64.AppImage --appimage-signature` or the `validate` tool from AppImageUpdate.
 
 ## Supported platforms
 All including (driver/javafx) formats:  
