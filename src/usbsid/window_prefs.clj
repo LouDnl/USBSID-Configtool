@@ -39,7 +39,7 @@
    [clojure.edn :as edn]
    [clojure.java.io :as io])
   (:import
-   [javafx.stage Window]))
+   [javafx.stage Screen Window]))
 
 
 ;;; Directory & file location
@@ -94,12 +94,24 @@
     (catch Exception _)))
 
 
+;;; Screen fit
+
+(defn fit-to-screen
+  "Clamp a width and height to the primary screen's visual bounds.
+   Call on the JavaFX application thread."
+  [w h]
+  (let [bounds (.getVisualBounds (Screen/getPrimary))]
+    [(min w (.getWidth bounds))
+     (min h (.getHeight bounds))]))
+
+
 ;;; Save and restore the state
 
 (defn set-window-state
   "Set the window state"
   []
-  (let [{:keys [x y w h]} (load-window)]
+  (let [{:keys [x y w h]} (load-window)
+        [w h]             (fit-to-screen w h)]
     (when-let [^Window win (first (Window/getWindows))]
       (.setWidth  win w)
       (.setHeight win h)

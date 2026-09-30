@@ -263,8 +263,8 @@
      [0x4 0x1 (if (:idle-breathe rgb) 1 0)] ; 14
      [0x4 0x2 (:brightness rgb)] ; 15
      [0x4 0x3 (max 0 (:sid-to-use rgb))] ; 16
-     [0x7 (if (:asid cfg) 1 0) 0] ; 17
-     [0x8 (if (:midi cfg) 1 0) 0] ; 18
+     [0x7 (if (get-in cfg [:asid :enabled]) 1 0) 0] ; 17
+     [0x8 (if (get-in cfg [:midi :enabled]) 1 0) 0] ; 18
      [0x9 (if (get-in cfg [:fmopl :enabled]) 1 0) 0] ; 19
      [0xA (if (:stereo-en cfg) 1 0) 0] ; 20
      [0xB (if (:lock-audio-sw cfg) 1 0) 0] ; 21

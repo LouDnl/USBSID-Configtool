@@ -54,7 +54,9 @@
   (:import
    [javafx.application Platform]
    [javafx.beans.value ChangeListener]
-   [javafx.scene.image Image]))
+   [javafx.scene.image Image]
+   [javafx.scene.control TextArea SplitPane]
+   [javafx.scene.layout VBox Priority]))
 
 
 ;;; State startup/shutdown refs
@@ -328,7 +330,8 @@
   "Here be letters!"
   [{:keys [log]}]
   {:fx/type    fx/ext-on-instance-lifecycle
-   :on-created (fn [^javafx.scene.control.TextArea ta]
+   :on-created (fn [^TextArea ta]
+                 (VBox/setVgrow ta Priority/ALWAYS)
                  (.addListener
                   (.textProperty ta)
                   (reify ChangeListener
@@ -382,8 +385,8 @@
      ;;  :min-height 650
      ;;  :width      1280
      ;;  :height     1024
-     :min-width  1024
-     :min-height 768
+     :min-width  (first  (w-prefs/fit-to-screen 1024 768))
+     :min-height (second (w-prefs/fit-to-screen 1024 768))
      :icons (let [img (icon-image)] (if img [img] []))
      :scene
      {:fx/type     :scene
