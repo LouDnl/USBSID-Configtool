@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2024-2026 LouD -->
+<!-- scripts/build-appimage.sh fills the releases placeholder from CHANGELOG.md -->
+<component type="desktop-application">
+  <id>nl.loudai.usbsid.configtool</id>
+  <name>USBSID-Configtool</name>
+  <summary>Configure USBSID-Pico boards</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer id="nl.loudai">
+    <name>LouD</name>
+  </developer>
+
+  <description>
+    <p>
+      USBSID-Configtool is the graphical configuration tool for USBSID-Pico, a Raspberry Pi
+      Pico (RP2040/RP2350) based board for one or two MOS SID chips and/or hardware SID
+      emulators over USB.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Predefined and manual socket configurations</li>
+      <li>Socket chip/SID auto detect</li>
+      <li>Clock, LED and PCB feature configuration</li>
+      <li>Clone chip configuration (FPGASID)</li>
+      <li>Save configs to an INI file and import them back, compatible with cfg_usbsid INI files</li>
+    </ul>
+    <p>Requires USBSID-Pico firmware 0.5.0-BETA or newer, 0.7.0-BETA or newer is advised.</p>
+  </description>
+
+  <launchable type="desktop-id">nl.loudai.usbsid.configtool.desktop</launchable>
+
+  <url type="homepage">https://github.com/LouDnl/USBSID-Configtool</url>
+  <url type="bugtracker">https://github.com/LouDnl/USBSID-Configtool/issues</url>
+  <url type="vcs-browser">https://github.com/LouDnl/USBSID-Configtool</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Welcome screen</caption>
+      <image>https://raw.githubusercontent.com/LouDnl/USBSID-Configtool/master/images/screenshot-linux-2.png</image>
+    </screenshot>
+  </screenshots>
+
+  <categories>
+    <category>Utility</category>
+    <category>Electronics</category>
+  </categories>
+
+  <keywords>
+    <keyword>USBSID</keyword>
+    <keyword>SID</keyword>
+    <keyword>C64</keyword>
+    <keyword>Commodore</keyword>
+  </keywords>
+
+  <provides>
+    <modalias>usb:vCAFEp4011d*</modalias>
+  </provides>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+    @RELEASES@
+  </releases>
+</component>

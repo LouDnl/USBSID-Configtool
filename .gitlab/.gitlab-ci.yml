@@ -18,9 +18,13 @@
 variables:
   # Java 25 (Temurin) on Ubuntu 24.04. The package names below assume noble.
   JAVA_IMAGE: "eclipse-temurin:25-jdk-noble"
-  # Same as the GitHub workflow, the install dir there says 1.1 for a 1.2 jar
-  DRIVERJAR: "usbsid-usb-driver-library-java-1.2.jar"
-  DRIVERPOM: "usbsid-usb-driver-library-java-1.2.pom"
+  # Same image, linux/arm64 manifest by digest (package:linux-appimage-arm64).
+  # Refresh: docker buildx imagetools inspect eclipse-temurin:25-jdk-noble
+  ARM64_JAVA_IMAGE: "eclipse-temurin@sha256:9e079392e9cc3b7b126be4761cefaefd23236934f4954dbfa4a2e727d14dd505"
+  # Same as the GitHub workflow
+  DRIVERVER: "1.2.1"
+  DRIVERJAR: "usbsid-usb-driver-library-java-1.2.1.jar"
+  DRIVERPOM: "usbsid-usb-driver-library-java-1.2.1.pom"
   # Clojure CLI installer, what setup-clojure runs on GitHub
   CLOJURE_INSTALLER_URL: "https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh"
   # Instance with the Intel macOS runner (no Apple Silicon runner there)
@@ -108,7 +112,7 @@ default:
 # scripts/install-libusb4java.sh for why the stock ones do not work on Windows.
 .install_driver_unix:
   script:
-    - DIR="$HOME/.m2/repository/usbsid/usbsid-usb-driver-library-java/1.1"
+    - DIR="$HOME/.m2/repository/usbsid/usbsid-usb-driver-library-java/${DRIVERVER}"
     - mkdir -p "$DIR"
     - cp "assets/driver/${DRIVERJAR}" "$DIR/"
     - cp "assets/driver/${DRIVERPOM}" "$DIR/"
@@ -191,11 +195,22 @@ package:linux:
   parallel:
     matrix:
       - PLATFORM: [linux, linux-appimage]
+  variables:
+    # Full history + tags: build-appimage.sh dates AppStream releases by tag
+    GIT_DEPTH: "0"
+  # AppImage: update information on v* tags only (d* prereleases would
+  # otherwise offer the older stable release as an update), signed when the
+  # APPIMAGE_SIGN_* CI/CD variables exist (protected: tags must be protected).
+  # Update information points at the GitHub releases on both instances.
   script:
     - clojure -T:build uber
     - clojure -T:build package
     - |
       if [ "$PLATFORM" = "linux-appimage" ]; then
+        apt-get install -y gnupg appstream
+        case "${CI_COMMIT_TAG:-}" in
+          v*) export APPIMAGE_UPDATE_INFO="gh-releases-zsync|LouDnl|USBSID-Configtool|latest|USBSID-Configtool-*-$(uname -m).AppImage.zsync" ;;
+        esac
         bash scripts/build-appimage.sh
       fi
     - |
@@ -205,6 +220,9 @@ package:linux:
         (cd target/package && zip -r "../../staging/USBSID-Configtool-${VERSION}-linux.zip" USBSID-Configtool/)
       else
         cp target/appimage/*.AppImage staging/
+        for f in target/appimage/*.zsync; do
+          [ -e "$f" ] && cp "$f" staging/
+        done
       fi
       ls -la staging
   artifacts:
@@ -214,6 +232,57 @@ package:linux:
     expire_in: 4 weeks
   needs:
     - job: ci:linux
+
+# Linux arm64 AppImage, run in an arm64 container under qemu user emulation
+# on the x86_64 Linux runner. The runner host needs arm64 binfmt registered
+# with the F (fix-binary) flag, persistent via the qemu-user-static and
+# binfmt-support packages. The Kubernetes executor has no per-job platform
+# option and the kubelet only picks the node's own platform (amd64) from a
+# manifest list: ARM64_JAVA_IMAGE names the arm64 image manifest by digest,
+# which skips that selection. Emulated: slow, allowed to fail.
+package:linux-appimage-arm64:
+  extends:
+    - .clojure_linux
+    - .rules_tagged
+  stage: package
+  image: "${ARM64_JAVA_IMAGE}"
+  allow_failure: true
+  timeout: 3h
+  variables:
+    # Full history + tags: build-appimage.sh dates AppStream releases by tag
+    GIT_DEPTH: "0"
+  cache:
+    key:
+      prefix: m2-arm64
+      files:
+        - deps.edn
+    paths:
+      - .m2/
+  script:
+    - uname -m
+    - clojure -T:build uber
+    - clojure -T:build package
+    - apt-get install -y gnupg appstream
+    - |
+      case "${CI_COMMIT_TAG:-}" in
+        v*) export APPIMAGE_UPDATE_INFO="gh-releases-zsync|LouDnl|USBSID-Configtool|latest|USBSID-Configtool-*-$(uname -m).AppImage.zsync" ;;
+      esac
+      bash scripts/build-appimage.sh
+    - |
+      mkdir -p staging
+      cp target/appimage/*.AppImage staging/
+      for f in target/appimage/*.zsync; do
+        [ -e "$f" ] && cp "$f" staging/
+      done
+      ls -la staging
+  artifacts:
+    name: "package-linux-appimage-arm64"
+    paths:
+      - staging/*
+    expire_in: 4 weeks
+  needs:
+    - job: ci:linux
+      artifacts: false
 
 # macOS Apple Silicon (jpackage .dmg), gitlab.com SaaS runner
 package:macos-arm:
@@ -354,7 +423,7 @@ package:windows:
       $env:PSModulePath = "$modules;$env:PSModulePath"
       Import-Module ClojureTools -ErrorAction Stop
     - |
-      $dir = "$HOME\.m2\repository\usbsid\usbsid-usb-driver-library-java\1.1"
+      $dir = "$HOME\.m2\repository\usbsid\usbsid-usb-driver-library-java\$env:DRIVERVER"
       New-Item -ItemType Directory -Force $dir | Out-Null
       Copy-Item "assets/driver/$env:DRIVERJAR" $dir -ErrorAction Stop
       Copy-Item "assets/driver/$env:DRIVERPOM" $dir -ErrorAction Stop
@@ -447,6 +516,8 @@ collect:files:
       parallel:
         matrix:
           - PLATFORM: [linux, linux-appimage]
+    - job: package:linux-appimage-arm64
+      optional: true
     - job: package:macos-arm
       optional: true
     - job: package:macos15-intel

@@ -50,7 +50,7 @@
 
 (def ^:private driver-group    "usbsid")
 (def ^:private driver-artifact "usbsid-usb-driver-library-java")
-(def ^:private driver-version  "1.2")
+(def ^:private driver-version  "1.2.1")
 
 (defn- ensure-driver!
   "Install the USBSID driver JAR/POM into the local Maven repo from assets/driver/ if absent."
@@ -86,8 +86,10 @@
   (conj java-opts "-Dcljfx.skip-javafx-initialization=true"))
 (def jfx-jvm-args
   (string/join " " (into jfx-opts java-opts)))
+; jpackage launchers run JavaFX from the uberjar classpath, not as modules:
+; jfx-opts only print "Unknown module" warnings there, leave them out
 (def jpackage-opts
-  (into jfx-opts java-opts))
+  java-opts)
 
 ; Platform / arch detection for selecting matching JavaFX classifier alias.
 ; macOS uberjar would otherwise pack BOTH $mac and $mac-aarch64 dylibs at
@@ -189,6 +191,17 @@
       (string/includes? os "mac")     "dmg"
       :else                           "app-image")))
 
+; Linux jpackage runtime modules, replaces the full JDK module set (javac,
+; jshell, jconsole, ...). jdeps on the uberjar reports java.base,
+; java.desktop, java.net.http, java.sql, jdk.jfr, jdk.jsobject,
+; jdk.unsupported and jdk.xml.dom; the rest covers reflective use
+; (logging, prefs, naming, management, scripting, zipfs, accessibility).
+(def ^:private linux-runtime-modules
+  ["java.base" "java.desktop" "java.logging" "java.management" "java.naming"
+   "java.net.http" "java.prefs" "java.scripting" "java.sql" "java.xml"
+   "jdk.accessibility" "jdk.jfr" "jdk.jsobject" "jdk.net" "jdk.unsupported"
+   "jdk.unsupported.desktop" "jdk.xml.dom" "jdk.zipfs"])
+
 (defn- jpackage!
   "Invoke jpackage with the given arg vector. Throws on non-zero exit."
   [args]
@@ -254,6 +267,7 @@
     (let [os           (string/lower-case (System/getProperty "os.name"))
           win?         (string/includes? os "windows")
           mac?         (string/includes? os "mac")
+          linux?       (string/includes? os "linux")
           icon         (cond
                          win?                          "resources/usbsid-configtool-icon.ico"
                          (string/includes? os "linux") "resources/usbsid-configtool-icon-flat.png"
@@ -272,9 +286,10 @@
                                  "--main-class"     "usbsid.core"
                                  "--vendor"         "LouD"
                                  "--description"    "USBSID-Configuration Tool"
-                                 "--copyright"      "Copyright 2024-2026 LouD, GPLv2"]
+                                 "--copyright"      "Copyright 2024-2026 LouD, GPL-3.0-or-later"]
                                 (mapcat #(vector "--java-options" %) jpackage-opts))
                          (and icon (.exists (File. ^String icon))) (into ["--icon" icon])
+                         linux? (into ["--add-modules" (string/join "," linux-runtime-modules)])
                          (and mac? (.exists (File. ^String entitlements)))
                          (into ["--mac-entitlements" entitlements])
                          win? (into ["--win-menu"
@@ -302,7 +317,7 @@
                       "--dest"          dest
                       "--vendor"        "LouD"
                       "--description"   "USBSID-Configuration Tool"
-                      "--copyright"     "Copyright 2024-2026 LouD, GPLv2"])
+                      "--copyright"     "Copyright 2024-2026 LouD, GPL-3.0-or-later"])
           (println (str "Package created in " dest "/")))
         ; Non-mac: single jpackage call as before.
         (do

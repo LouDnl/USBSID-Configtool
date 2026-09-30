@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=USBSID-Configtool
+GenericName=USBSID-Pico configuration tool
+Comment=Configuration tool for USBSID-Pico boards
+Exec=USBSID-Configtool
+Icon=nl.loudai.usbsid.configtool
+Terminal=false
+Categories=Utility;Electronics;
+Keywords=USBSID;SID;C64;Commodore;Pico;USB;

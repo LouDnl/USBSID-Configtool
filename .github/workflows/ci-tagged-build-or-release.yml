@@ -11,8 +11,9 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-  DRIVERJAR: usbsid-usb-driver-library-java-1.2.jar
-  DRIVERPOM: usbsid-usb-driver-library-java-1.2.pom
+  DRIVERVER: "1.2.1"
+  DRIVERJAR: usbsid-usb-driver-library-java-1.2.1.jar
+  DRIVERPOM: usbsid-usb-driver-library-java-1.2.1.pom
 
 jobs:
 
@@ -42,7 +43,7 @@ jobs:
       - name: Install USBSID driver
         shell: bash
         run: |
-          DIR="$HOME/.m2/repository/usbsid/usbsid-usb-driver-library-java/1.1"
+          DIR="$HOME/.m2/repository/usbsid/usbsid-usb-driver-library-java/${{ env.DRIVERVER }}"
           mkdir -p "$DIR"
           cp assets/driver/${{ env.DRIVERJAR }} "$DIR/"
           cp assets/driver/${{ env.DRIVERPOM }} "$DIR/"
@@ -81,7 +82,7 @@ jobs:
       - name: Install USBSID driver
         shell: bash
         run: |
-          DIR="$HOME/.m2/repository/usbsid/usbsid-usb-driver-library-java/1.1"
+          DIR="$HOME/.m2/repository/usbsid/usbsid-usb-driver-library-java/${{ env.DRIVERVER }}"
           mkdir -p "$DIR"
           cp assets/driver/${{ env.DRIVERJAR }} "$DIR/"
           cp assets/driver/${{ env.DRIVERPOM }} "$DIR/"
@@ -121,6 +122,8 @@ jobs:
             platform: linux            # jpackage app-image (zipped directory)
           - os: ubuntu-latest
             platform: linux-appimage   # self-contained .AppImage
+          - os: ubuntu-24.04-arm       # arm64, free hosted runner for public repos
+            platform: linux-appimage-aarch64
           - os: windows-latest
             platform: windows          # jpackage .msi installer
           - os: macos-15-intel         # Intel x86_64
@@ -129,7 +132,10 @@ jobs:
             platform: macos-arm        # jpackage .dmg
 
     steps:
+      # Full history + tags: build-appimage.sh dates AppStream releases by tag
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ startsWith(matrix.platform, 'linux-appimage') && '0' || '1' }}
 
       - uses: actions/setup-java@v4
         with:
@@ -150,7 +156,7 @@ jobs:
       - name: Install USBSID driver
         shell: bash
         run: |
-          DIR="$HOME/.m2/repository/usbsid/usbsid-usb-driver-library-java/1.1"
+          DIR="$HOME/.m2/repository/usbsid/usbsid-usb-driver-library-java/${{ env.DRIVERVER }}"
           mkdir -p "$DIR"
           cp assets/driver/${{ env.DRIVERJAR }} "$DIR/"
           cp assets/driver/${{ env.DRIVERPOM }} "$DIR/"
@@ -167,15 +173,27 @@ jobs:
         shell: bash
         run: clojure -T:build uber
 
+      # AppImage: update information on v* tags only (d* prereleases would
+      # otherwise offer the older stable release as an update), signed when
+      # the APPIMAGE_SIGN_* secrets exist
       - name: Build platform package
         shell: bash
+        env:
+          APPIMAGE_SIGN_KEY: ${{ secrets.APPIMAGE_SIGN_KEY }}
+          APPIMAGE_SIGN_PASSPHRASE: ${{ secrets.APPIMAGE_SIGN_PASSPHRASE }}
+          APPIMAGE_SIGN_PRIVATE_KEY: ${{ secrets.APPIMAGE_SIGN_PRIVATE_KEY }}
         run: |
           clojure -T:build package
-          if [ "${{ matrix.platform }}" = "linux-appimage" ]; then
+          if [[ "${{ matrix.platform }}" == linux-appimage* ]]; then
+            sudo apt-get update
+            sudo apt-get install -y appstream
+            if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+              export APPIMAGE_UPDATE_INFO="gh-releases-zsync|LouDnl|USBSID-Configtool|latest|USBSID-Configtool-*-$(uname -m).AppImage.zsync"
+            fi
             bash scripts/build-appimage.sh
           fi
 
-      # Stage output with platform-tagged filenames so all five can coexist
+      # Stage output with platform-tagged filenames so all six can coexist
       - name: Stage artifacts
         shell: bash
         run: |
@@ -185,8 +203,11 @@ jobs:
           if [ "${{ matrix.platform }}" = "linux" ]; then
             (cd target/package && zip -r "../../staging/USBSID-Configtool-${VERSION}-linux.zip" USBSID-Configtool/)
 
-          elif [ "${{ matrix.platform }}" = "linux-appimage" ]; then
+          elif [[ "${{ matrix.platform }}" == linux-appimage* ]]; then
             cp target/appimage/*.AppImage staging/
+            for f in target/appimage/*.zsync; do
+              [ -e "$f" ] && cp "$f" staging/
+            done
 
           elif [ "${{ matrix.platform }}" = "windows" ]; then
             cp target/package/*.msi "staging/USBSID-Configtool-${VERSION}-windows.msi"

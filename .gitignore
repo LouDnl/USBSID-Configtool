@@ -27,6 +27,7 @@
 !example-configs
 !images
 !resources
+!resources/appimage
 !scripts
 !src
 !src/usbsid
@@ -55,6 +56,11 @@
 !resources/usbsid-configtool-icon-flat.png
 !resources/usbsid-configtool-logo.png
 !resources/usbsid-logo.png
+!resources/appimage/nl.loudai.usbsid.configtool.appdata.xml
+!resources/appimage/nl.loudai.usbsid.configtool.desktop
+!resources/appimage/signing-key.asc
+!resources/appimage/usbsid-configtool-icon-256.png
+!resources/appimage/usbsid-configtool-icon-512.png
 !scripts/build-appimage.sh
 !scripts/install-libusb4java.sh
 
