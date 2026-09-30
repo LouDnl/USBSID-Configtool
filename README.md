@@ -68,6 +68,7 @@ Font used is `C64 TrueType v1.2.1/Style` by [style64](https://style64.org/c64-tr
 The font is implemented according to their [license statement](https://style64.org/c64-truetype/license)  
 
 ## License
-Copyright © 2026 LouD  
+Copyright © 2024-2026 LouD  
   
-Distributed under the [Eclipse Public License 2.0](https://www.eclipse.org/legal/epl-2.0)
+Distributed under the [GNU General Public License v3.0 or later](LICENSE), with an additional permission under GPLv3 section 7 for linking with Clojure and other Eclipse Public License libraries, see [LICENSE-EXCEPTION](LICENSE-EXCEPTION).  
+Releases and tagged builds up to v0.4.7 and d20260923 were distributed under the [Eclipse Public License 2.0](https://www.eclipse.org/legal/epl-2.0).
