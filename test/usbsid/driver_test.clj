@@ -195,7 +195,7 @@
 ; config->commands tests
 
 (deftest commands-count
-  (testing "always emits 26 SET_CONFIG commands"
+  (testing "always emits 27 SET_CONFIG commands"
     (is (= 27 (count (driver/config->commands model/initial-config))))))
 
 (deftest commands-clock-pal
