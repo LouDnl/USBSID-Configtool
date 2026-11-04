@@ -21,6 +21,8 @@
 !.github/workflows
 !.gitlab
 !.gitlab/**
+!.gitea
+!.gitea/**
 !assets
 !assets/driver
 !assets/lib
