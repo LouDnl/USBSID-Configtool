@@ -206,7 +206,8 @@ jobs:
           elif [[ "${{ matrix.platform }}" == linux-appimage* ]]; then
             cp target/appimage/*.AppImage staging/
             for f in target/appimage/*.zsync; do
-              [ -e "$f" ] && cp "$f" staging/
+              # no .zsync on d* tags: an "[ -e ] && cp" here would end the step with status 1
+              if [ -e "$f" ]; then cp "$f" staging/; fi
             done
 
           elif [ "${{ matrix.platform }}" = "windows" ]; then

@@ -150,10 +150,34 @@ jobs:
           java-version: '25'
 
       - uses: DeLaGuardo/setup-clojure@13.4
+        if: runner.os != 'Windows'
         with:
           # Gitea's token is not valid on GitHub's API; ask anonymously.
           github-token: ''
           cli: latest
+
+      # On Windows setup-clojure downloads the MSI with `gh release download`,
+      # which needs the GitHub CLI and a GitHub token (GitHub's image has both,
+      # this runner neither). Same MSI and install folder, fetched anonymously.
+      - name: Install Clojure CLI (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $rel = Invoke-RestMethod -Headers @{ 'User-Agent' = 'gitea-runner' } `
+                   -Uri 'https://api.github.com/repos/casselc/clj-msi/releases/latest'
+          $asset = $rel.assets | Where-Object { $_.name -like 'clojure-*.msi' } | Select-Object -First 1
+          if (-not $asset) { throw "no clojure-*.msi in casselc/clj-msi $($rel.tag_name)" }
+          $msi = Join-Path $env:RUNNER_TEMP $asset.name
+          Invoke-WebRequest -UseBasicParsing -Uri $asset.browser_download_url -OutFile $msi
+          $dir = 'C:\tools\ClojureTools'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $p = Start-Process msiexec.exe -Wait -PassThru -ArgumentList "/i `"$msi`" /qn /norestart APPLICATIONFOLDER=`"$dir`""
+          # 0 ok, 3010 ok (reboot wanted), 1638 a newer version is already installed
+          if ($p.ExitCode -notin 0, 3010, 1638) { throw "msiexec failed with exit code $($p.ExitCode)" }
+          Write-Host "Clojure CLI $($rel.tag_name) in $dir (msiexec $($p.ExitCode))"
+          "CLOJURE_INSTALL_DIR=$dir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          $dir | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
       - name: Cache Maven
         uses: actions/cache@v4
@@ -199,6 +223,18 @@ jobs:
             if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
               export APPIMAGE_UPDATE_INFO="gh-releases-zsync|LouDnl|USBSID-Configtool|latest|USBSID-Configtool-*-$(uname -m).AppImage.zsync"
             fi
+            if [[ "${{ matrix.platform }}" == linux-appimage-aarch64 ]]; then
+              # Gitea's arm64 runner is x86_64 + qemu-user. An AppImage stores
+              # its "AI\x02" marker in ELF header bytes 8-10, which the qemu
+              # binfmt mask compares, so the kernel refuses it ("Exec format
+              # error"). Pre-fetch appimagetool to the path build-appimage.sh
+              # uses and blank those 3 bytes (it then runs extracted).
+              T=target/appimagetool-aarch64.AppImage
+              mkdir -p target
+              curl -fsSL -o "$T" https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage
+              printf '\0\0\0' | dd of="$T" bs=1 seek=8 count=3 conv=notrunc status=none
+              chmod +x "$T"
+            fi
             bash scripts/build-appimage.sh
           fi
 
@@ -215,7 +251,8 @@ jobs:
           elif [[ "${{ matrix.platform }}" == linux-appimage* ]]; then
             cp target/appimage/*.AppImage staging/
             for f in target/appimage/*.zsync; do
-              [ -e "$f" ] && cp "$f" staging/
+              # no .zsync on d* tags: an "[ -e ] && cp" here would end the step with status 1
+              if [ -e "$f" ]; then cp "$f" staging/; fi
             done
 
           elif [ "${{ matrix.platform }}" = "windows" ]; then
