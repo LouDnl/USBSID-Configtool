@@ -22,10 +22,49 @@ env:
 
 jobs:
 
+  # 0. Pick a Clojure CLI version that has both a Linux/mac script and a Windows MSI
+  clojure-version:
+    name: Resolve Clojure CLI version
+    runs-on: ubuntu-latest
+    outputs:
+      cli: ${{ steps.pick.outputs.cli }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick CLI version
+        id: pick
+        shell: bash
+        run: |
+          CLJ=$(grep -oE 'org\.clojure/clojure[[:space:]]+\{:mvn/version[[:space:]]+"[0-9]+\.[0-9]+\.[0-9]+"' deps.edn | head -n1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          echo "deps.edn clojure: $CLJ"
+          # Anonymous GitHub API, paged; $1 = url, $2 = json key to print
+          fetch() {
+            local p body names
+            for p in 1 2 3 4 5; do
+              body=$(curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 -H 'Accept: application/vnd.github+json' "$1&page=$p") || return 1
+              names=$(printf '%s' "$body" | python3 -c 'import json,sys; [print(x.get(sys.argv[1], "")) for x in json.load(sys.stdin)]' "$2") || return 1
+              [ -z "$names" ] && break
+              printf '%s\n' "$names"
+            done
+          }
+          BREW=$(fetch 'https://api.github.com/repos/clojure/brew-install/tags?per_page=100' name | sort -u) || BREW=""
+          MSI=$(fetch 'https://api.github.com/repos/casselc/clj-msi/releases?per_page=100' tag_name | sed 's/^v//' | sort -u) || MSI=""
+          CLI=""
+          if [ -n "$CLJ" ] && [ -n "$BREW" ] && [ -n "$MSI" ]; then
+            CLI=$(comm -12 <(printf '%s\n' "$BREW") <(printf '%s\n' "$MSI") | grep -F "$CLJ." | grep -E "^${CLJ//./\\.}\.[0-9.]+$" | sort -V | tail -n1)
+          fi
+          if [ -z "$CLI" ]; then
+            echo "::warning::deps.edn clojure ${CLJ:-unknown} had no matching CLI build in both lists, using stable"
+            CLI=$(curl -fsSL --retry 5 --retry-all-errors https://download.clojure.org/install/stable.properties | awk '{print $1; exit}')
+          fi
+          echo "Clojure CLI: $CLI"
+          echo "cli=$CLI" >> "$GITHUB_OUTPUT"
+
   # 1. Unit tests - Ubuntu only
   test:
     name: Tests (Ubuntu)
     runs-on: ubuntu-latest
+    needs: [clojure-version]
     steps:
       - uses: actions/checkout@v4
 
@@ -34,11 +73,14 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - uses: DeLaGuardo/setup-clojure@13.4
-        with:
-          # Gitea's token is not valid on GitHub's API; ask anonymously.
-          github-token: ''
-          cli: latest
+      - name: Install Clojure CLI ${{ needs.clojure-version.outputs.cli }}
+        run: |
+          if command -v sudo >/dev/null; then SUDO=sudo; else SUDO=; fi
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 \
+            -o "$RUNNER_TEMP/clj-install.sh" "https://download.clojure.org/install/linux-install-${{ needs.clojure-version.outputs.cli }}.sh"
+          chmod +x "$RUNNER_TEMP/clj-install.sh"
+          $SUDO "$RUNNER_TEMP/clj-install.sh"
+          clojure -Sdescribe >/dev/null && clojure --version
 
       - name: Cache Maven
         uses: actions/cache@v4
@@ -66,7 +108,7 @@ jobs:
   ci:
     name: CI Build (Ubuntu)
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, clojure-version]
     steps:
       - uses: actions/checkout@v4
 
@@ -75,11 +117,14 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - uses: DeLaGuardo/setup-clojure@13.4
-        with:
-          # Gitea's token is not valid on GitHub's API; ask anonymously.
-          github-token: ''
-          cli: latest
+      - name: Install Clojure CLI ${{ needs.clojure-version.outputs.cli }}
+        run: |
+          if command -v sudo >/dev/null; then SUDO=sudo; else SUDO=; fi
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 \
+            -o "$RUNNER_TEMP/clj-install.sh" "https://download.clojure.org/install/linux-install-${{ needs.clojure-version.outputs.cli }}.sh"
+          chmod +x "$RUNNER_TEMP/clj-install.sh"
+          $SUDO "$RUNNER_TEMP/clj-install.sh"
+          clojure -Sdescribe >/dev/null && clojure --version
 
       - name: Cache Maven
         uses: actions/cache@v4
@@ -121,7 +166,7 @@ jobs:
   package:
     name: Package (${{ matrix.platform }})
     if: startsWith(github.ref, 'refs/tags/')
-    needs: ci
+    needs: [ci, clojure-version]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -149,12 +194,28 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - uses: DeLaGuardo/setup-clojure@13.4
+      # Attempt 1; on failure wait and retry once (non-Windows only, see below)
+      - name: Setup Clojure CLI (attempt 1)
+        id: clj1
         if: runner.os != 'Windows'
+        continue-on-error: true
+        uses: DeLaGuardo/setup-clojure@13.5.3
         with:
           # Gitea's token is not valid on GitHub's API; ask anonymously.
           github-token: ''
-          cli: latest
+          cli: ${{ needs.clojure-version.outputs.cli }}
+
+      - name: Wait before Clojure CLI retry
+        if: runner.os != 'Windows' && steps.clj1.outcome == 'failure'
+        shell: bash
+        run: sleep 45
+
+      - name: Setup Clojure CLI (attempt 2)
+        if: runner.os != 'Windows' && steps.clj1.outcome == 'failure'
+        uses: DeLaGuardo/setup-clojure@13.5.3
+        with:
+          github-token: ''
+          cli: ${{ needs.clojure-version.outputs.cli }}
 
       # On Windows setup-clojure downloads the MSI with `gh release download`,
       # which needs the GitHub CLI and a GitHub token (GitHub's image has both,
@@ -164,18 +225,25 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $rel = Invoke-RestMethod -Headers @{ 'User-Agent' = 'gitea-runner' } `
-                   -Uri 'https://api.github.com/repos/casselc/clj-msi/releases/latest'
-          $asset = $rel.assets | Where-Object { $_.name -like 'clojure-*.msi' } | Select-Object -First 1
-          if (-not $asset) { throw "no clojure-*.msi in casselc/clj-msi $($rel.tag_name)" }
-          $msi = Join-Path $env:RUNNER_TEMP $asset.name
-          Invoke-WebRequest -UseBasicParsing -Uri $asset.browser_download_url -OutFile $msi
+          # Version picked by job clojure-version from deps.edn
+          $ver = '${{ needs.clojure-version.outputs.cli }}'
+          $name = "clojure-$ver.msi"
+          $url = "https://github.com/casselc/clj-msi/releases/download/v$ver/$name"
+          $msi = Join-Path $env:RUNNER_TEMP $name
+          for ($i = 1; $i -le 5; $i++) {
+            try { Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $msi; break }
+            catch {
+              if ($i -eq 5) { throw "download $url failed: $_" }
+              Write-Host "download attempt $i failed, retry in 20s"
+              Start-Sleep -Seconds 20
+            }
+          }
           $dir = 'C:\tools\ClojureTools'
           New-Item -ItemType Directory -Force -Path $dir | Out-Null
           $p = Start-Process msiexec.exe -Wait -PassThru -ArgumentList "/i `"$msi`" /qn /norestart APPLICATIONFOLDER=`"$dir`""
           # 0 ok, 3010 ok (reboot wanted), 1638 a newer version is already installed
           if ($p.ExitCode -notin 0, 3010, 1638) { throw "msiexec failed with exit code $($p.ExitCode)" }
-          Write-Host "Clojure CLI $($rel.tag_name) in $dir (msiexec $($p.ExitCode))"
+          Write-Host "Clojure CLI $ver in $dir (msiexec $($p.ExitCode))"
           "CLOJURE_INSTALL_DIR=$dir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           $dir | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
