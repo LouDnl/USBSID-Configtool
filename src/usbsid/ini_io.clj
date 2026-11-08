@@ -120,6 +120,8 @@
       (str "mirrored = " (bool->s (:mirrored cfg)))
       (str "flipped  = " (bool->s (:flipped cfg)))
       (str "mixed    = " (bool->s (:mixed cfg)))
+      "; USB RX ringbuffer, applies after save and reboot. Possible options: False, True"
+      (str "rx_ring  = " (bool->s (:rx-ring cfg)))
       ""
       "[LED]"
       "; Possible options: False, True"
@@ -247,6 +249,7 @@
         (upd [:mirrored]               s->bool "socketTwo" "act_as_one") ; compat
         (upd [:flipped]                s->bool "Features"  "flipped")
         (upd [:mixed]                  s->bool "Features"  "mixed")
+        (upd [:rx-ring]                s->bool "Features"  "rx_ring")
         (upd [:led :enabled]           s->bool "LED"       "enabled")
         (upd [:led :idle-breathe]      s->bool "LED"       "idle_breathe")
         (upd [:rgbled :enabled]        s->bool "RGBLED"    "enabled")

@@ -38,6 +38,18 @@
    [clojure.test         :refer [deftest is testing are]]
    [usbsid.config-model  :as model]))
 
+(deftest rx-ring-version-gate
+  (testing "only versions newer than 0.8.1 pass"
+    (is (false? (model/rx-ring-version? "0.8.1")))
+    (is (false? (model/rx-ring-version? "0.8.0")))
+    (is (true?  (model/rx-ring-version? "0.8.2")))
+    (is (true?  (model/rx-ring-version? "0.9.0-20261108")))
+    (is (true?  (model/rx-ring-version? "1.0.0")))
+    (is (true?  (model/rx-ring-version? "v0.10.0")))
+    (is (false? (model/rx-ring-version? nil)))
+    (is (false? (model/rx-ring-version? "")))
+    (is (false? (model/rx-ring-version? "garbage")))))
+
 (deftest clock-rate-lookup
   (testing "clock-rate-by-id maps id → key"
     (are [id k] (= k (:key (get model/clock-rate-by-id id)))
@@ -108,6 +120,10 @@
       (is (some? (:socket-two c)))
       (is (some? (:led c)))
       (is (some? (:rgbled c)))))
+  (testing "initial-config rx-ring defaults on and is a v0_7 capability"
+    (is (true? (:rx-ring model/initial-config)))
+    (is (model/fw-supports? :v0_7 :rx-ring))
+    (is (not (model/fw-supports? :legacy :rx-ring))))
   (testing "initial-config clock-rate is valid key"
     (is (some? (get model/clock-rate-by-key (:clock-rate model/initial-config)))))
   (testing "initial-config socket chiptyp is valid"

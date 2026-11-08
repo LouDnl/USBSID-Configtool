@@ -79,12 +79,14 @@
                  6 1    ; external_clock
                  57 1   ; stereo_en
                  58 1   ; lock_audio_sw
+                 59 1   ; rx_ring
                  60 7])) ; mirrored|flipped|mixed all set
         cfg (driver/parse-config-bytes buf)]
     (is (true?  (:need-confirmation cfg)))
     (is (true?  (:socket_change_detect cfg)))
     (is (true?  (:lock-clockrate cfg)))
     (is (true?  (:external-clock cfg)))
+    (is (true?  (:rx-ring cfg)))
     (is (true?  (:stereo-en cfg)))
     (is (true?  (:lock-audio-sw cfg)))
     (is (true?  (:mirrored cfg)))
@@ -195,8 +197,8 @@
 ; config->commands tests
 
 (deftest commands-count
-  (testing "always emits 27 SET_CONFIG commands"
-    (is (= 27 (count (driver/config->commands model/initial-config))))))
+  (testing "always emits 28 SET_CONFIG commands"
+    (is (= 28 (count (driver/config->commands model/initial-config))))))
 
 (deftest commands-clock-pal
   (let [cfg   (assoc model/initial-config :clock-rate :pal :lock-clockrate false)
@@ -276,6 +278,39 @@
     (is (= [0xC 0 0] (nth cmds 22))) ; mirrored
     (is (= [0xD 1 0] (nth cmds 23))) ; flipped
     (is (= [0xE 0 0] (nth cmds 24))))) ; mixed
+
+(deftest commands-rx-ring
+  (testing "rx-ring emits BOARD_RXRING (item 17) as last command"
+    (is (= [0x11 1 0] (nth (driver/config->commands model/initial-config) 27)))
+    (is (= [0x11 0 0] (nth (driver/config->commands
+                            (assoc model/initial-config :rx-ring false)) 27)))))
+
+(deftest filter-supported-commands-rx-ring
+  (let [cmds (driver/config->commands model/initial-config)]
+    (testing "command list count stays 28"
+      (is (= 28 (count cmds))))
+    (testing "old firmware drops item 0x11"
+      (is (= 27 (count (driver/filter-supported-commands "0.8.1" cmds))))
+      (is (not-any? #(= 0x11 (first %)) (driver/filter-supported-commands nil cmds))))
+    (testing "new firmware keeps all"
+      (is (= cmds (driver/filter-supported-commands "0.9.0-20261108" cmds))))))
+
+(deftest parse-rx-ring-bit
+  (testing "byte 59 = rx-ring, byte 6 bit 0 = external-clock, byte 6 bits 1-2 do not set rx-ring"
+    (let [buf (byte-array 64)]
+      (aset-byte buf 59 1)
+      (let [cfg (driver/parse-config-bytes buf)]
+        (is (true?  (:rx-ring cfg)))
+        (is (false? (:external-clock cfg))))
+      (aset-byte buf 59 0)
+      (aset-byte buf 6 4)
+      (let [cfg (driver/parse-config-bytes buf)]
+        (is (false? (:rx-ring cfg)))
+        (is (false? (:external-clock cfg))))
+      (aset-byte buf 6 3)
+      (let [cfg (driver/parse-config-bytes buf)]
+        (is (false? (:rx-ring cfg)))
+        (is (true?  (:external-clock cfg)))))))
 
 (deftest commands-sections-match-c-tool
   (testing "section indices match cfg_usbsid.c write_config"

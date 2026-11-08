@@ -50,6 +50,8 @@
   (let [fw-line          (or (:fw-line connection) :v0_7)
         flip-mix-disable (not (model/fw-supports? fw-line :flipped))
         confirm-disable  (not (model/fw-supports? fw-line :socket_change_detect))
+        rxring-disable   (or (not (model/fw-supports? fw-line :rx-ring))
+                             (not (model/rx-ring-version? (:fw-version connection))))
         fwverint         (model/parse-fw-version (:fw-version connection))]
     {:fx/type     :v-box
      :style-class "c64-vbox"
@@ -143,6 +145,20 @@
                        {:hover-popup hover-popup
                         :hover-text  "Enable/ Disable the boards silent autodetection during socket preset implementation"
                         :popup-key   [:preset_auto_detect :enabled]}))
+           (w/c64-row "USB RX ringbuffer"
+                      (common/toggles
+                       :onoff
+                       {:fx/type     :toggle-button
+                        :text        (if (:rx-ring config) "ON " "OFF")
+                        :selected    (:rx-ring config)
+                        :disable     rxring-disable
+                        :on-action   {:event/type :config-changed
+                                      :path       [:rx-ring]
+                                      :value      (not (:rx-ring config))}
+                        :style-class "c64-toggle"}
+                       {:hover-popup hover-popup
+                        :hover-text  "Buffers up to 8 incoming USB packets, prevents cracks on write-heavy tunes. Default on. Applies after save and reboot."
+                        :popup-key   [:rx-ring :enabled]}))
            (w/c64-row "Mirrored"
                       (common/toggles
                        :onoff

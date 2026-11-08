@@ -89,7 +89,8 @@
      :last-preset          (:key (get model/preset-by-id (bit-and (g 4) 0x7f)))
      ; Clockworx
      :lock-clockrate       (pos? (g 5))
-     :external-clock       (pos? (g 6))
+     :external-clock       (pos? (bit-and (g 6) 0x1)) ; bit 1 = board_clock_link (ignored)
+     :rx-ring              (pos? (g 59))             ; byte 59, USB RX ringbuffer, applies after save + reboot
      :clock-rate           (:key (get model/clock-rate-by-id clk-id {:key :pal}))
      ; SocketOne
      :socket-one           {:enabled  (pos? (g 10))
@@ -229,7 +230,8 @@
    [:flipped]                23
    [:mixed]                  24
    [:socket_change_detect]   25
-   [:preset_auto_detect]     26})
+   [:preset_auto_detect]     26
+   [:rx-ring]                27})
 
 (defmulti config->commands*
   "Convert a config map to a seq of [section item value] triples for SET_CONFIG.
@@ -272,7 +274,8 @@
      [0xD (if (:flipped cfg) 1 0) 0] ; 23
      [0xE (if (:mixed cfg) 1 0) 0] ; 24
      [0xF (if (:socket_change_detect cfg) 1 0) 0] ; 25
-     [0x10 (if (:preset_auto_detect cfg) 1 0) 0]])) ; 26
+     [0x10 (if (:preset_auto_detect cfg) 1 0) 0] ; 26
+     [0x11 (if (:rx-ring cfg) 1 0) 0]])) ; 27 (BOARD_RXRING item 17)
 
 (defn- legacy-socket-cmds
   "SET_CONFIG triples for one legacy-firmware socket.
@@ -322,6 +325,14 @@
   ([cfg]         (config->commands* :v0_7 cfg))
   ([fw-line cfg] (config->commands* fw-line cfg)))
 
+(defn filter-supported-commands
+  "Drop SET_CONFIG triples the firmware version does not know. Item 0x11
+   (BOARD_RXRING) needs firmware newer than 0.8.1."
+  [fw-version cmds]
+  (if (model/rx-ring-version? fw-version)
+    cmds
+    (vec (remove (fn [[a]] (= a 0x11)) cmds))))
+
 (defn- set-cfg
   "Wrapper around .USBSID_sendconfigcommand"
   [& {:keys [a b c d]
@@ -350,7 +361,9 @@
         (state/log! (format "send-config! skipping %s chiptype %s - no v0.5/0.6 equivalent"
                             (name sk) (name chip)))))
     (doall
-     (doseq [[a b c] (config->commands fw-line cfg)]
+     (doseq [[a b c] (filter-supported-commands
+                      (get-in @state/*state [:connection :fw-version])
+                      (config->commands fw-line cfg))]
        (try
          (set-cfg {:a a :b b :c c})
          (catch Exception e
@@ -586,7 +599,10 @@
             [a b c]         (when (integer? commandlocation)
                               (nth cfgvec commandlocation))]
 
-        (when (integer? commandlocation)
+        (when (and (integer? commandlocation)
+                   (seq (filter-supported-commands
+                         (get-in @state/*state [:connection :fw-version])
+                         [[a b c]])))
          (try
           (state/log! (str "Set configuration item: " (dissoc cfgitem :singles)))
           (set-cfg {:a a :b b :c c})

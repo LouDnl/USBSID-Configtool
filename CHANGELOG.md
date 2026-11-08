@@ -1,6 +1,9 @@
 # Changelog
 Please refer to the [releases page](https://github.com/LouDnl/USBSID-Configtool/releases) for more information on version changes
 
+#### Version: Unreleased
+* Add USB RX ringbuffer setting
+
 #### Version: 0.4.8
 * Relicense from EPL-2.0 to GPL-3.0-or-later with a GPLv3 section 7 exception for Clojure and other EPL libraries
 * AppImage: update information and .zsync on releases, GPG signature, AppStream metainfo, square icons

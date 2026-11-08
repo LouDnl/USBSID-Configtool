@@ -191,6 +191,13 @@
     (is (false? (:flipped cfg)))
     (is (true?  (:mixed cfg)))))
 
+(deftest rx-ring-ini-roundtrip
+  (let [cfg (assoc model/initial-config :rx-ring false)
+        out (ini-io/config->ini cfg "v1.0.0")]
+    (is (string/includes? out "rx_ring  = False"))
+    (is (false? (:rx-ring (ini-io/ini->config out model/initial-config))))
+    (is (true?  (:rx-ring (ini-io/ini->config "[Features]\nrx_ring = True\n" cfg))))))
+
 (deftest import-act-as-one-compat
   (testing "socketTwo/act_as_one maps to :mirrored"
     (let [ini "[socketTwo]\nact_as_one = True\n"

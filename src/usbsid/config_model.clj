@@ -70,6 +70,17 @@
 
 ;;; Fixed things
 
+(defn rx-ring-version?
+  "True when the firmware version string is newer than 0.8.1 (0.8.1 excluded).
+   Parses the leading major.minor.patch (optional leading v). Unparseable
+   input returns false."
+  [fwver]
+  (if-let [[_ ma mi pa] (when (string? fwver)
+                          (re-find #"^\s*[vV]?(\d+)\.(\d+)\.(\d+)" fwver))]
+    (pos? (compare [(Long/parseLong ma) (Long/parseLong mi) (Long/parseLong pa)]
+                   [0 8 1]))
+    false))
+
 (def clock-rates
   [{:key :default :label "DEFAULT (1.000 MHz)" :value 1000000 :id 0}
    {:key :pal     :label "PAL     (0.985 MHz)" :value 985248  :id 1}
@@ -169,7 +180,7 @@
   {:legacy #{:clock :sockets :led :rgb :fmopl :stereo :audio-sw :mirrored}
    :v0_7   #{:clock :sockets :led :rgb :fmopl :stereo :audio-sw :mirrored
              :flipped :mixed :need-confirmation :socket_change_detect
-             :last-preset :preset_auto_detect}})
+             :last-preset :preset_auto_detect :rx-ring}})
 
 (defn fw-supports?
   "True if the given firmware line exposes the given capability keyword."
@@ -281,5 +292,6 @@
    :need-confirmation    false
    :socket_change_detect true
    :preset_auto_detect   true
+   :rx-ring              true
    :last-preset          :dual-both ; defaults to 2 dual-both
    :raw-config           nil}) ; save the raw config bytes just in case we need to verify things
