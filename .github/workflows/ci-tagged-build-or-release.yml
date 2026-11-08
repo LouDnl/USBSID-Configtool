@@ -128,7 +128,7 @@ jobs:
             platform: windows          # jpackage .msi installer
           - os: macos-15-intel         # Intel x86_64
             platform: macos-intel      # jpackage .dmg
-          - os: macos-14               # Apple Silicon arm64
+          - os: macos-15               # Apple Silicon arm64
             platform: macos-arm        # jpackage .dmg
 
     steps:
