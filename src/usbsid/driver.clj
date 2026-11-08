@@ -89,7 +89,8 @@
      :last-preset          (:key (get model/preset-by-id (bit-and (g 4) 0x7f)))
      ; Clockworx
      :lock-clockrate       (pos? (g 5))
-     :external-clock       (pos? (bit-and (g 6) 0x1)) ; bit 1 = board_clock_link (ignored)
+     :external-clock       (pos? (bit-and (g 6) 0x1)) ; bit 0 = external_clock, set by firmware clock detection, read-only
+     :clock-link           (pos? (bit-and (g 6) 0x2)) ; bit 1 = board_clock_link, set with LINK_CLOCK (0x84)
      :rx-ring              (pos? (g 59))             ; byte 59, USB RX ringbuffer, applies after save + reboot
      :clock-rate           (:key (get model/clock-rate-by-id clk-id {:key :pal}))
      ; SocketOne
@@ -224,6 +225,7 @@
    [:asid :enabled]          17
    [:midi :enabled]          18
    [:fmopl :enabled]         19
+   [:fmopl :sidno]           19
    [:stereo-en]              20
    [:lock-audio-sw]          21
    [:mirrored]               22
@@ -267,7 +269,10 @@
      [0x4 0x3 (max 0 (:sid-to-use rgb))] ; 16
      [0x7 (if (get-in cfg [:asid :enabled]) 1 0) 0] ; 17
      [0x8 (if (get-in cfg [:midi :enabled]) 1 0) 0] ; 18
-     [0x9 (if (get-in cfg [:fmopl :enabled]) 1 0) 0] ; 19
+     ; BOARD_FMOPL: buffer[2] = enabled, buffer[3] = SID number 1~4. The firmware
+     ; assigns FMOpl by SID number, enabled with SID number 0 clears the assignment.
+     [0x9 (if (get-in cfg [:fmopl :enabled]) 1 0)
+      (if (get-in cfg [:fmopl :enabled]) (max 0 (min 4 (or (get-in cfg [:fmopl :sidno]) 0))) 0)] ; 19
      [0xA (if (:stereo-en cfg) 1 0) 0] ; 20
      [0xB (if (:lock-audio-sw cfg) 1 0) 0] ; 21
      [0xC (if (:mirrored cfg) 1 0) 0] ; 22
@@ -593,6 +598,10 @@
                                         value)
                               :always
                               (assoc :singles true))
+            ; One FMOpl command carries enabled + sidno, merge the current state
+            cfgitem         (cond-> cfgitem
+                              (= :fmopl (first path))
+                              (update :fmopl #(merge (get-in @state/*state [:config :fmopl]) %)))
             commandlocation (get config-path->command-id path)
             cfgvec          (when (integer? commandlocation)
                               (config->commands* :v0_7 cfgitem))
@@ -829,6 +838,37 @@
       (state/log! "Resetting SID chips")
       (.USBSID_reset @drv-atom (byte 0))
       (state/log! "SIDs reset."))))
+
+(defn reset-sid-registers!
+  "Send reset all SID registers command (RESET_SID 0x0E with arg 1) to USBSID-Pico"
+  []
+  (with-driver "Reset SID registers"
+    (fn []
+      (state/log! "Resetting SID registers")
+      (.USBSID_resetallregisters @drv-atom)
+      (state/log! "SID registers reset."))))
+
+;; LINK_CLOCK has no constant in the Java driver enum, use the raw command byte
+(def link-clock-cmd 0x84)
+
+(defn set-clock-link!
+  "Enable or disable the clock link (LINK_CLOCK 0x84). The firmware only saves
+   and reboots when the value changes; disconnect on a changed value."
+  [enabled]
+  (with-driver "Clock link"
+    (fn []
+      (let [new (if enabled 1 0)
+            old (if (get-in @state/*state [:config :clock-link]) 1 0)]
+        (state/log! (str "Setting clock link " (if enabled "ON" "OFF")))
+        (.USBSID_sendconfigcommand
+         @drv-atom
+         link-clock-cmd
+         (into-array Byte [(cfg-byte new)]))
+        (when (not= new old)
+          (state/log! "Clock link changed, board saves and reboots (USB will disconnect)")
+          (Thread/sleep 100)
+          (disconnect!)
+          (state/log! "Board rebooting. Reconnect when ready."))))))
 
 (defn reset-mcu!
   "Send reboot command to USBSID-Pico"

@@ -180,7 +180,7 @@
   {:legacy #{:clock :sockets :led :rgb :fmopl :stereo :audio-sw :mirrored}
    :v0_7   #{:clock :sockets :led :rgb :fmopl :stereo :audio-sw :mirrored
              :flipped :mixed :need-confirmation :socket_change_detect
-             :last-preset :preset_auto_detect :rx-ring}})
+             :last-preset :preset_auto_detect :rx-ring :clock-link}})
 
 (defn fw-supports?
   "True if the given firmware line exposes the given capability keyword."
@@ -208,6 +208,10 @@
    {:key 3   :label "SID 3"}
    {:key 4   :label "SID 4"}
    {:key 255 :label "Disabled"}])
+
+(def fmopl-sid-select-options
+  "Selectable FMOpl SID numbers, 0 = not assigned"
+  (vec (remove (comp #{255} :key) fmopl-sid-options)))
 
 (def sid-to-use-options
   [{:key -1 :label "Off"}
@@ -283,6 +287,7 @@
    :midi                 {:enabled true}
    :fmopl                {:sidno 0 :enabled false}
    :external-clock       false
+   :clock-link           false
    :lock-clockrate       false
    :stereo-en            false
    :lock-audio-sw        false

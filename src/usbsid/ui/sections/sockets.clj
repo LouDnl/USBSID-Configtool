@@ -178,19 +178,28 @@
                                         :value      (not (get-in config [:fmopl :enabled]))}
                           :style-class "c64-toggle"}
                          {:hover-popup hover-popup
-                          :hover-text  "Disable or enable FMOpl, after saving the SID No. will automatically be detected if needed"
+                          :hover-text  "FMOpl only works after a SID No. (1-4) is picked. Enabling with SID No. Unknown clears the assignment. The SID must have an address assigned or the board refuses it."
                           :popup-key   [:fmopl :dualsid]}))
 
       (w/c64-narrow-row "FMOpl SID No."
-                        {:fx/type     :label
-                         :text        (:label
-                                       (first
-                                        (filter
-                                         (if (get-in config [:fmopl :enabled])
-                                           (comp #{(get-in config [:fmopl :sidno])} :key)
-                                           (comp #{0} :key))
-                                         model/fmopl-sid-options)))
-                         :style-class "c64-label-dim"})]}]})
+                        {:fx/type          :combo-box
+                         :style-class      ["combo-box" "c64-combo-box"]
+                         :items            (mapv :label model/fmopl-sid-select-options)
+                         :value            (:label
+                                            (first
+                                             (filter
+                                              (comp #{(if (get-in config [:fmopl :enabled])
+                                                        (get-in config [:fmopl :sidno])
+                                                        0)} :key)
+                                              model/fmopl-sid-select-options)))
+                         :disable          (not (get-in config [:fmopl :enabled]))
+                         :on-value-changed (fn [v]
+                                             (when-let [s (first
+                                                           (filter
+                                                            (comp #{v} :label)
+                                                            model/fmopl-sid-select-options))]
+                                               (events/config-changed!
+                                                [:fmopl :sidno] (:key s))))})]}]})
 
 (defn preset-panel
   "If your lazy like, kinda..."

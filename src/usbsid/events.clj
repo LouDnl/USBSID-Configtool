@@ -71,6 +71,11 @@
     (driver/set-config! path value))
   (state/set-config-value! path value))
 
+(defmethod handle :set-clock-link [{:keys [value]}]
+  (if (driver/connected?)
+    (driver/set-clock-link! value)
+    (state/log! "Clock link needs a connected board")))
+
 (defmethod handle :connect [{:keys [key]}]
   (when key (handle {:event/type :popup-hide :key key}))
   (driver/connect!))
@@ -144,6 +149,9 @@
 
 (defmethod handle :reset-sids [_]
   (driver/reset-sids!))
+
+(defmethod handle :reset-sid-registers [_]
+  (driver/reset-sid-registers!))
 
 (defmethod handle :reset-mcu [_]
   (driver/reset-mcu!))

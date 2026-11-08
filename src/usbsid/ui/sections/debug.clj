@@ -105,6 +105,11 @@
            :disable     (not connected?)
            :style-class "c64-button-danger"}
           {:fx/type     :button
+           :text        "RESET SID REGISTERS"
+           :on-action   {:event/type :reset-sid-registers}
+           :disable     (not connected?)
+           :style-class "c64-button-danger"}
+          {:fx/type     :button
            :text        "RESTART BUS"
            :on-action   {:event/type :restart-bus}
            :disable     (not connected?)

@@ -266,7 +266,25 @@
 (deftest commands-fmopl
   (let [cfg  (assoc model/initial-config :fmopl {:enabled true :sidno 2})
         cmds (driver/config->commands cfg)]
-    (is (= [0x9 1 0] (nth cmds 19))))) ; FMOpl enabled=1
+    (is (= [0x9 1 2] (nth cmds 19))) ; FMOpl enabled=1, buffer[3] = sidno
+    (is (= [0x9 0 0] (nth (driver/config->commands
+                           (assoc model/initial-config :fmopl {:enabled false :sidno 2})) 19)))
+    (is (= [0x9 1 0] (nth (driver/config->commands
+                           (assoc model/initial-config :fmopl {:enabled true :sidno 0})) 19)))
+    (is (= 19 (get driver/config-path->command-id [:fmopl :sidno])))))
+
+(deftest parse-clock-link-bit
+  (testing "byte 6 bit 0 = external-clock (read-only), bit 1 = clock-link"
+    (doseq [[b ext link] [[0 false false] [1 true false] [2 false true] [3 true true]]]
+      (let [buf (byte-array 64)]
+        (aset-byte buf 6 b)
+        (let [cfg (driver/parse-config-bytes buf)]
+          (is (= ext  (:external-clock cfg)))
+          (is (= link (:clock-link cfg))))))))
+
+(deftest link-clock-command-byte
+  (is (= 0x84 driver/link-clock-cmd))
+  (is (not (contains? driver/config-path->command-id [:external-clock]))))
 
 (deftest commands-advanced
   (let [cfg  (assoc model/initial-config
@@ -416,3 +434,12 @@
       (is (some (fn [[_ i _]] (= i 0x1)) s1))
       (is (some (fn [[_ i _]] (= i 0x4)) s1))
       (is (some (fn [[_ i _]] (= i 0x5)) s1)))))
+
+; Reset SID registers command (RESET_SID 0x0E, arg 1, same as cfg_usbsid --reset-sid-registers)
+
+(deftest reset-sid-registers-wired
+  (testing "driver fn is defined"
+    (is (fn? driver/reset-sid-registers!)))
+  (testing "GUI event dispatches to a handler"
+    (require 'usbsid.events)
+    (is (contains? (methods @(resolve 'usbsid.events/handle)) :reset-sid-registers))))

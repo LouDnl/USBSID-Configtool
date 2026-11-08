@@ -3,6 +3,7 @@ Please refer to the [releases page](https://github.com/LouDnl/USBSID-Configtool/
 
 #### Version: Unreleased
 * Add USB RX ringbuffer setting
+* Add clock link, FMOpl SID selector and SID register reset, fix FMOpl write
 
 #### Version: 0.4.8
 * Relicense from EPL-2.0 to GPL-3.0-or-later with a GPLv3 section 7 exception for Clojure and other EPL libraries

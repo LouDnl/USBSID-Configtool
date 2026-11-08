@@ -47,7 +47,7 @@
 (defn clock-section
   "I've seen better time"
   [{:keys [config connection hover-popup]}]
-  (let [pcbverint (or (model/parse-pcb-version (:pcb-version connection)) 99)]
+  (let [_pcb (:pcb-version connection)]
     {:fx/type     :v-box
      :style-class "c64-vbox"
      :spacing     8
@@ -93,15 +93,24 @@
           (w/c64-narrow-row "External Clock"
                             (common/toggles
                              :onoff
-                             (w/c64-toggle
-                              (:external-clock config)
-                              {:event/type :config-changed
-                               :path       [:external-clock]
-                               :value      (not (:external-clock config))}
-                              {:disabled
-                               (or
-                                (> pcbverint 10)
-                                (:lock-clockrate config))})
+                             {:fx/type     :label
+                              :text        (if (:external-clock config) "ON " "OFF")
+                              :style-class "c64-label-dim"}
                              {:hover-popup hover-popup
-                              :hover-text  "Use an external clock source (v1.0 PCB's only!)"
-                              :popup-key   [:external-clock]}))]}]}]}))
+                              :hover-text  "Display only, the firmware detects an external clock source at startup"
+                              :popup-key   [:external-clock]}))
+
+          (w/c64-narrow-row "Clock link"
+                            (common/toggles
+                             :onoff
+                             {:fx/type     :toggle-button
+                              :text        (if (:clock-link config) "ON " "OFF")
+                              :selected    (boolean (:clock-link config))
+                              :disable     (or (not (model/fw-supports? (:fw-line connection) :clock-link))
+                                               (not= (:status connection) :connected))
+                              :on-action   {:event/type :set-clock-link
+                                            :value      (not (:clock-link config))}
+                              :style-class "c64-toggle"}
+                             {:hover-popup hover-popup
+                              :hover-text  "Link the board clock to an external clock input. Changing this saves the configuration and reboots the board"
+                              :popup-key   [:clock-link]}))]}]}]}))
