@@ -146,7 +146,7 @@ jobs:
         run: ./scripts/install-libusb4java.sh
 
       - name: Install Xvfb
-        run: sudo apt-get update && sudo apt-get install -y xvfb
+        run: sudo apt-get -o Acquire::Retries=5 update && sudo apt-get -o Acquire::Retries=5 install -y xvfb
 
       - name: CI build (uber + launchers)
         env:
@@ -286,8 +286,8 @@ jobs:
         run: |
           clojure -T:build package
           if [[ "${{ matrix.platform }}" == linux-appimage* ]]; then
-            sudo apt-get update
-            sudo apt-get install -y appstream
+            sudo apt-get -o Acquire::Retries=5 update
+            sudo apt-get -o Acquire::Retries=5 install -y appstream
             if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
               export APPIMAGE_UPDATE_INFO="gh-releases-zsync|LouDnl|USBSID-Configtool|latest|USBSID-Configtool-*-$(uname -m).AppImage.zsync"
             fi
